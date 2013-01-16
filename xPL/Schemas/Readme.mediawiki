@@ -2,77 +2,76 @@ The following Message Schema have been ratified by The xPL Project:
 
 == xPL protocol core schemas ==
 
-*[[Schemas/HBEAT.mediawiki| HBEAT]] Device heartbeat signalling
-*[[Schemas/CONFIG.mediawiki| CONFIG]] Device configuration
+*[[Schemas/HBEAT.mediawiki| HBEAT]]  Device heartbeat signalling
+*[[Schemas/CONFIG.mediawiki| CONFIG]]  Device configuration
 
 == Home Control Family ==
 
-*[[Schemas/HVAC.mediawiki| HVAC]] Interaction with HVAC related devices (thermostats etc)
-*[[Schemas/LIGHTING.mediawiki| LIGHTING]] Control for any lighting system (X10, UPB, ZWave, CBus, etc)
-*[[Schemas/MEDIA.mediawiki| MEDIA]] Control of media related devices (MP3/CD/DVD players, HTPC etc)
-*[[Schemas/SECURITY.mediawiki| SECURITY]] Interaction with security related devices (alarm panels, motion sensors, smoke alarms etc)
-
-*[[Schemas/HOMEEASY.BASIC.mediawiki| ]] Native control of Byron HomeEasy devices
-*[[Schemas/X10.BASIC.mediawiki| ]] Native control of X10 devices.
-*[[Schemas/X10.SECURITY.mediawiki| ]] For X10 Security Devices.
-*[[Schemas/ZWAVE.BASIC.mediawiki| ]] Native control of Z-Wave devices.
+*[[Schemas/HVAC.mediawiki| HVAC]]  Interaction with HVAC related devices (thermostats etc)
+*[[Schemas/LIGHTING.mediawiki| LIGHTING]]  Control for any lighting system (X10, UPB, ZWave, CBus, etc)
+*[[Schemas/MEDIA.mediawiki| MEDIA]]  Control of media related devices (MP3/CD/DVD players, HTPC etc)
+*[[Schemas/SECURITY.mediawiki| SECURITY]]  Interaction with security related devices (alarm panels, motion sensors, smoke alarms etc)
+*[[Schemas/HOMEEASY.BASIC.mediawiki| HOMEEASY.BASIC]]  Native control of Byron HomeEasy devices
+*[[Schemas/X10.BASIC.mediawiki| X10.BASIC]]  Native control of X10 devices.
+*[[Schemas/X10.SECURITY.mediawiki| X10.SECURITY]]  For X10 Security Devices.
+*[[Schemas/ZWAVE.BASIC.mediawiki| ZWAVE.BASIC]]  Native control of Z-Wave devices.
 
 == Caller ID Family ==
-*[[Schemas/CID.BASIC.mediawiki| CID.BASIC]]
-*[[Schemas/CID.METEOR.mediawiki| CID.METEOR ]]
-*[[Schemas/CID.NETCALL.mediawiki| CID.NETCALL ]]
-for i in `cat list`; do wget "http://xplproject.org.uk/wiki/index.php?title=Schema_-_$i&action=raw" -O $i.mediawiki; done"
+*[[Schemas/CID.BASIC.mediawiki| CID.BASIC]] 
+*[[Schemas/CID.METEOR.mediawiki| CID.METEOR ]] 
+*[[Schemas/CID.NETCALL.mediawiki| CID.NETCALL ]] 
+
 == Audio Family ==
 The AUDIO.BASIC schema has been extended several times to accomodate various media players. TTS (Text to Speech) is included within the audio family, and allows various implementation of TTS engines to inject speech alerts into audio streams. 
 
-*[[Schemas/AUDIO.BASIC.mediawiki| AUDIO.BASIC ]]
-*[[Schemas/AUDIO.WINAMP.mediawiki| AUDIO.WINAMP ]]
-*[[Schemas/AUDIO.SLIMSERV.mediawiki| AUDIO.SLIMSERV ]]
-*[[Schemas/AUDIO.RIO.mediawiki| AUDIO.RIO ]]
-*[[Schemas/TTS.BASIC.mediawiki| TTS.BASIC ]]
+*[[Schemas/AUDIO.BASIC.mediawiki| AUDIO.BASIC ]] 
+*[[Schemas/AUDIO.WINAMP.mediawiki| AUDIO.WINAMP ]] 
+*[[Schemas/AUDIO.SLIMSERV.mediawiki| AUDIO.SLIMSERV ]] 
+*[[Schemas/AUDIO.RIO.mediawiki| AUDIO.RIO ]] 
+*[[Schemas/TTS.BASIC.mediawiki| TTS.BASIC ]] 
 
 == On Screen Display Family ==
-*[[Schemas/OSD.BASIC.mediawiki| OSD.BASIC ]]
-*[[Schemas/OSD.TIVO.mediawiki| OSD.TIVO ]]
+*[[Schemas/OSD.BASIC.mediawiki| OSD.BASIC ]] 
+*[[Schemas/OSD.TIVO.mediawiki| OSD.TIVO ]] 
 
 == Time of Day Family ==
-*[[Schemas/DATETIME.BASIC.mediawiki| DATETIME.BASIC ]]
-*[[Schemas/DAWNDUSK.BASIC.mediawiki| DAWNDUSK.BASIC]]
-*[[Schemas/TIMER.BASIC.mediawiki| TIMER.BASIC ]]
+*[[Schemas/DATETIME.BASIC.mediawiki| DATETIME.BASIC ]] 
+*[[Schemas/DAWNDUSK.BASIC.mediawiki| DAWNDUSK.BASIC]] 
+*[[Schemas/TIMER.BASIC.mediawiki| TIMER.BASIC ]] 
 
 == Database and Logging Family ==
-*[[Schemas/DB.BASIC.mediawiki| DB.BASIC ]]
-*[[Schemas/DB.XQL.mediawiki| DB.XQL ]]
-*[[Schemas/LOG.BASIC.mediawiki| LOG.BASIC ]]
+*[[Schemas/DB.BASIC.mediawiki| DB.BASIC ]] 
+*[[Schemas/DB.XQL.mediawiki| DB.XQL ]] 
+*[[Schemas/LOG.BASIC.mediawiki| LOG.BASIC ]] 
 
 == Remote Control Family ==
 These schema seek to present a unified way to represent IR Control data within the xPL environment.
 
-*[[Schemas/REMOTE.BASIC.mediawiki| REMOTE.BASIC ]]
-*[[Schemas/IR.BASIC.mediawiki| IR.BASIC ]] (Proposed)
+*[[Schemas/REMOTE.BASIC.mediawiki| REMOTE.BASIC ]] 
+*[[Schemas/IR.BASIC.mediawiki| IR.BASIC ]]  (Proposed)
 
 == Digiguide TV Guide ==
 This early schema family is improperly formed, that is, a simple .basic type has not been defined. It will probably be redesigned to more accurately reflect the mor powerful inheritance based schema model, as well as being extended to support more sources of TV guide info.
 
-*[[Schemas/DGUIDE.PLAYING.mediawiki| DGUIDE.PLAYING ]]
-*[[Schemas/DGUIDE.REMIND.mediawiki| DGUIDE.REMIND ]]
-*[[Schemas/DGUIDE.START.mediawiki| DGUIDE.START ]]
-*[[Schemas/DGUIDE.END.mediawiki| DGUIDE.END ]]
+*[[Schemas/DGUIDE.PLAYING.mediawiki| DGUIDE.PLAYING ]] 
+*[[Schemas/DGUIDE.REMIND.mediawiki| DGUIDE.REMIND ]] 
+*[[Schemas/DGUIDE.START.mediawiki| DGUIDE.START ]] 
+*[[Schemas/DGUIDE.END.mediawiki| DGUIDE.END ]] 
 
 == Send Message Family ==
 This family of schema will be extended over time to support different mechanisms, such as SMS, MEN Messenger etc. 
 
-*[[Schemas/SENDMSG.BASIC.mediawiki| SENDMSG.BASIC ]]
-*[[Schemas/SENDMSG.SMTP.mediawiki| SENDMSG.SMTP ]]
+*[[Schemas/SENDMSG.BASIC.mediawiki| SENDMSG.BASIC ]] 
+*[[Schemas/SENDMSG.SMTP.mediawiki| SENDMSG.SMTP ]] 
 
 == Telemetry Family ==
 One of the most powerful message schemas, Control and Sensor work together to allow a variety of simple devices (switches, temperature sensors, buttons, beam breaks etc) to be represented within an xPL environment. The simple rule of thumb for developers is - if the message is an xpl-trig sent by a device, it should probably use "sensor.basic", if it's a command that a device should carry out (ie, an xpl-cmnd message) then control.basic is more appropriate.
 
-*[[Schemas/SENSOR.BASIC.mediawiki| SENSOR.BASIC ]]
-*[[Schemas/CONTROL.BASIC.mediawiki| CONTROL.BASIC ]]
+*[[Schemas/SENSOR.BASIC.mediawiki| SENSOR.BASIC ]] 
+*[[Schemas/CONTROL.BASIC.mediawiki| CONTROL.BASIC ]] 
 
 == Misc Schemas ==
-*[[Schemas/UPS.BASIC.mediawiki| UPS.BASIC ]]
-*[[Schemas/WEBCAM.BASIC.mediawiki| WEBCAM.BASIC ]]
-*[[Schemas/EXEC.BASIC.mediawiki| EXEC.BASIC ]]
+*[[Schemas/UPS.BASIC.mediawiki| UPS.BASIC ]] 
+*[[Schemas/WEBCAM.BASIC.mediawiki| WEBCAM.BASIC ]] 
+*[[Schemas/EXEC.BASIC.mediawiki| EXEC.BASIC ]] 
 
