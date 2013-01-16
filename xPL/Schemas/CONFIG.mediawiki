@@ -1,0 +1,144 @@
+== CONFIG Message Specification ==
+
+This schema provides the description of configuration messages send by xPL devices on the xPL network. This schema is part of the core [[XPL Specification Document|xPL Protocol]]. If a device is not configurable, it should only send [[Schema_-_HBEAT|regular heartbeats]].
+
+== XPL-STAT Structure ==
+
+=== CONFIG.BASIC ===
+The basic heartbeat is for use by small devices, such as PIC systems. PC based applications must use the ''config.app'' schema, because of hub requirements. The schema contents are identical to the ''hbeat.basic'' schema.
+
+ config.basic
+ {
+ interval=[interval in minutes]
+ [version=[version info]]
+ (...additional info defined by the developer)
+ }
+
+=== CONFIG.APP ===
+
+The app heartbeat is for use by PC based applications, using ethernet. They must use this schema, because it contains the necessary information for the hub to communicate with the xPL application.
+The schema contents are identical to the ''hbeat.app'' schema.
+
+ config.app
+ {
+ interval=[interval in minutes]
+ port=[listening port]
+ remote-ip=[local IP address]
+ [version=[version info]]
+ (...additional info defined by the developer)
+ }
+
+=== CONFIG.LIST ===
+
+Whenever a configurable device receives a ''config.list'' '''command''' message, it will respond with a ''config.list'' '''status''' message, informing the xPL network about the configurable parameters it exposes.
+ config.list
+ {
+ reconf=newconf
+ [option=interval]
+ [option=group[16]]
+ [option=filter[16]]
+ [config|reconf|option]=[optionname[count]]
+ ...
+ }
+*The keys of the key-value pairs indicate the type of option;
+** '''config''' : this type of value is required and can only be configured at device startup and it cannot be altered later
+** '''reconf''' : this type of value is required and can be re-configured at any time
+** '''option''' : optional field that may be omitted when responding
+*The values of the key-value pairs are the names of the parameters.
+*The number between the square brackets [] (to be read as literal in the schema) indicates the maximum number of values for a parameter (defaults to 1 if omitted). In the defined schema ''newconf'' and ''interval'' have the default maximum of 1 value, while ''group'' and ''filter'' have a maximum of 16 values. See ''config.response'' on how to set the values.
+
+An example for creating the regular parameters and one required, but reconfigurable parameter named ''myvalue'', with a maximum supported number of values of 5 would be:
+ config.list
+ {
+ reconf=newconf
+ option=interval
+ option=group[16]
+ option=filter[16]
+ reconf=myvalue[5]
+ }
+=== CONFIG.CURRENT ===
+Whenever a configurable device receives a ''config.current'' '''command''' message, it will respond with a ''config.current'' '''status''' message, informing the xPL network about the current values of its configurable parameters.
+ config.current
+ {
+ newconf=[new instance id]
+ [interval=[Interval in minutes]]
+ [group=[group value 1]]     (repeat for additional group values in group list)
+ [filter=[filter value 1]]   (repeat for additional filter values in filter list)
+ [<developer defined parameters...>=[value]]
+ ...
+ }
+As the ''newconf'' parameter is required for each configurable device, it should always be listed. If there are no filters or groups set, then these values can be omitted. Alternatively, if they are not set but they are supported, then these can be left blank eg.
+ filter=
+ group=
+to indicate that they are supported, but not set.
+
+=== CONFIG.END ===
+
+The end heartbeat will notify other xPL devices that the device is no longer available. It allows devices that track other devices to clean up.
+
+ config.end
+ {
+ (...additional info defined by the developer)
+ }
+''config.end'' should only be sent if the heartbeat messages sent so far were ''config.basic'' or ''config.app'', otherwise ''hbeat.end'' should be sent.
+It is not required for devices to sent the ''config.end''.
+
+== XPL-CMND Structure ==
+
+=== CONFIG.LIST ===
+
+ config.list
+ {
+ command=request
+ }
+This command must be targetted at a specific device (no groupnames or wildcards may be used) and requests the device to list its configurable items. The target device will, if it has configuration capabilities, respond with a ''config.list'' '''status''' message.
+
+=== CONFIG.RESPONSE ===
+
+This command must be targetted at a the specific device (no groupnames or wildcards may be used) and instructs the device to reconfigure its parameters with the values received in this message.
+ config.response
+ {
+ newconf=[new instance id]
+ [interval=[value]]
+ [group=[value]]
+ [filter=[value]]
+ [developer defined parameters...=[value]]
+ ...
+ }
+The parameter ''newconf'' is required, ''interval'', ''group'' and ''filter'' are optional. Nevertheless the order in which they appear must be as specified.
+To illustrate how ''config.response'' works an example;
+
+example: message sent to device "vendor-device.oldname"
+ config.response
+ {
+ newconf=newname
+ interval=6
+ group=xpl-group.lamps
+ group=xpl-group.drapes
+ secret=can't tell
+ }
+The device should now change its name to "vendor-device.newname", set the heartbeat interval to 6 minutes, clear the grouplist and then add the groups lamps and drapes. The ''filter'' parameter is not listed, so no changes will be made to the filter list. and finally a custom parameter called ''secret'' will be set to the value "can't tell".
+
+If a parameter supports multiple values (as set in the ''config.list'' '''status''' message) then each time a ''config.response'' command arrives and that parameters name is listed, the entire list the device is currently holding will be erased and will be replaced with the values that were received.
+In the example the list of filters as set in the parameter ''filter'' is left alone because it isn't mentioned. Would the line
+ filter=
+have been added, then the entire list would have been erased. Note that due to the specified order the ''filter'' parameter should have been listed between the last ''group'' parameter and the ''secret'' parameter.
+
+=== CONFIG.CURRENT ===
+ config.current
+ {
+ command=request
+ }
+This command must be targetted at a specific device (no groupnames or wildcards may be used) and requests the device to list the current values of its configurable items. The target device will, if it has configuration capabilities, respond with a ''config.current'' '''status''' message.
+
+== XPL-TRIG Structure ==
+Not applicable for configuration.
+
+== Standard Schema Notes ==
+Until 23-nov-2009 there was an inconsistency in the order of which the ''group'' and ''filter'' parameters appeared in the ''config.list'' '''status''' message and the ''config.current'' '''status''' message in the xPL Protocol. At that time this schema was compiled from the [[XPL Specification Document|xPL Specification Document]] and the inconsistency was noted, but also that the ''config.response'' '''command''' message had an undefined order. As of then the schemas have all been aligned by using the order ''group'' first and then '' filter''.
+
+This is important because the xPL protocol prescribes that the key-value pairs '''MUST''' appear in the order defined in the schema.
+So be aware that some older devices might have another order of config items in their ''config.current'' '''status''' message and ''config.response'' '''command''' message.
+
+Make your applications/devices ''forgiving'' when receiving messages and ''unforgiving'' when composing them.
+

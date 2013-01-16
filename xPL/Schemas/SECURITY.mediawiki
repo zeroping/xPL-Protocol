@@ -1,0 +1,663 @@
+==Overview==
+This schema family aims to allow security-related devices, such as alarm panels, motion sensors, smoke detectors etc to be controlled via a common set of xPL messages.  The goal is to make basic control as straightforward as possible, but with enough sophistication for the schema to be useable with as wide a range of devices as possible.
+
+===Terminology===
+====Zone====
+A zone represents a single input into an alarm panel.  It may consist of more than one physical sensor device, but the important point is that as far as the alarm system is concerned the zone is the smallest unit of the alarm system that can trigger an alert. 
+
+Zones are classified into three types â€“ Perimeter, Interior and 24 Hour.  A perimeter zone consists of sensors on doors and windows â€“ sensors that would be triggered by someone entering or leaving a property but not by someone moving around inside.  Many alarm systems have an â€œarm homeâ€ setting that arms only the perimeter zones â€“ useful for arming an occupied house at night. 
+
+An interior zone detects activity inside a property, and will usually be some form of motion detector.  The systems that have the â€œarm-homeâ€ setting will also have an â€œarm-awayâ€ where both the perimeter and interior zones are armed for when the property is unoccupied.
+
+24 Hour zones are used with sensors that need to be active at all times, such as smoke detectors and flood or gas sensors and panic buttons.  A 24 hour zone will trigger an alarm no matter what the state of the alarm panel.
+
+====Area====
+An area is a group of zones that are to be treated as a group.  A zone may exist in more than one area.  Using areas can reduce the amount of work involved when interacting with the alarm system, since the number areas will probably be far less than the number of zones.  
+
+Software implementing the security schema should report the same events for areas as for zones, so that anything that happens with a zone is also reported by any areas that contain it.  Other programs can then safely ignore zones and zone events and only deal with the lower number of areas and area events.
+
+Areas are not supported by all alarm systems, the security.gateinfo describes what commands support are supported against areas.
+
+====Gateway====
+This describes the software that sits on the xPL network and is attached to an HA protocol interface (i.e. a CM11 for X10, PIM for UPB, etc). It sends and receives xPL messages and translates them to/from the underlying HA protocol. Depending on the abilities of the underlying HA protocol, it may be a very thin layer (translating literally from one format to another with no other processing) or thicker (taking more abstract commands from xPL and possibly turning them into multiple HA protocol commands, caching and tracking device state, etc). 
+
+The gateway may represent a central alarm panel or console, but it is equally possible for it to be just a pathway to a collection of sensors.  For example, a PC RF receiver could implement the security schema for sending events received from wireless motion detectors, without there being an alarm system installed.  In this case, the zones (and possibly areas) would just send alerts to the xPL world, and the concept of arming / disarming would be ignored.
+
+===Discovery Process===
+
+An xPL client can query an xPL gateway about the system and the capabilities it provides. Zones and Areas can be queried for state at any time, but in general, at startup there is a preferred way that such a client should approach discovering what is out there. 
+
+NOTE: Its perfectly ok for a client to not ask for any info at all if it "knows" what zones and areas exist. It's also entirely ok to send requests for info in any order and at any time while the gateway is running. 
+
+The preferred means to fully interrogate an xPL gateway is as follows: 
+
+{| border="1"		align="center"							
+|'''Description'''|| '''Request'''||'''Response'''
+|-
+| Gateway info/capabilities ||security.request request=gateinfo ||security.gateinfo
+|-
+| Current state of the gateway ||security.request request= gatestat || security.gatestat
+|-
+| Lists of zones  ||security.request request= zonelist || security.zonelist
+|-
+| Individual zone details  ||security.request request= zoneinfo || security. zoneinfo
+|-
+| Current zone state  ||security.request request= zonestat || security. zonestat
+|-
+| Lists of areas  ||security.request request= arealist || security.arealist
+|-
+| Individual area details  ||security.request request= areainfo || security. areainfo
+|-
+| Current area state  ||security.request request= areastat || security.areastat
+|-
+|}
+
+A few things to note: 
+*When the gateway starts up, it should send a security.gateway trigger message to announce its presence.  
+*You should have only one request outstanding at a time. You do not want to flood the xPL network and since the underlying network protocol (UDP) has no error recovery, if you did send too many requests at once, some would likely get lost. 
+*When sending a request, you should ideally start a timer after sending and wait up to 5 seconds for the requested info. If you have not received the response in 5 seconds, send it again. Do this no more than 5 times, after which you should assume the gateway is having problems and you should stop all further discovery activity. 
+*the zonelist and arealist requests result in a list of zones or areas being sent back. If you want to get information for each of the returned zones or areas, you should adhere to the last two points - send a request for only one zone or area at a time, wait for a response with timeout/retrying as needed, parse the response and then move on to the next zone or area.
+
+===Message types===
+
+There are three different types of messages in the security schema, commands, status and trigger messages.
+ 
+==== Command Messages  ====
+Commands messages are sent to the gateway from any xPL device to instruct the gateway to perform an action. The commands supported by the gateway are determined by the security.gateinfo. Some commands can be called on the entire system (gateway) or limited to the area or even to the zone. The security.gateinfo messages determine which commands are support at what level.
+
+The following table outlines the available commands and the expected gateway responses to these commands.
+
+{| border="1"	align="center"
+|-
+|'''Description'''	||'''Command'''|| '''Response'''
+|-
+|Arm ||security.basic command=arm-away <br> with area-list||security.gateway event=armed <br> with zone-list and area-list
+|-
+|Arm perimeter ||security.basic command=arm-home||security.gateway event=armed <br> with zone-list and area-list
+|-
+|Disarm||security.basic command=disarm||security.gateway event=disarmed <br> with zone-list and area-list
+|-
+|Panic ||security.basic command=panic|| security.gateway event=alarm		
+|-
+|Isolate zone ||security.basic command=isolate|| security.zone event=isolated
+|-
+|Bypass zone||	security.basic command=bypass|| security.zone event=bypassed
+|-
+|Enable zone||	security.basic command=enable|| security.zone event=normal 
+|-
+| Gateway info/capabilities ||security.request request=gateinfo ||security.gateinfo
+|-
+| Current state of the gateway ||security.request request= gatestat || security.gatestat
+|-
+| Lists of zones  ||security.request request= zonelist || security.zonelist
+|-
+| Individual zone details  ||security.request request= zoneinfo || security. zoneinfo
+|-
+| Current zone state  ||security.request request= zonestat || security. zonestat
+|-
+| Lists of areas  ||security.request request= arealist || security.arealist
+|-
+| Individual area details  ||security.request request= areainfo || security. areainfo
+|-
+| Current area state  ||security.request request= areastat || security.areastat			
+|}
+ 
+
+==== Status Messages ====
+
+Status Messages are informational messages that are a response to a command asking for configuration or status details. That is the only time in which these messages are sent. The following table outlines the information available and the command message that requests it.
+
+{| border="1"		align="center"							
+|'''Description'''	|| '''Command'''||	''' Status Message'''
+|-
+| Gateway info/capabilities ||security.request request=gateinfo ||security.gateinfo
+|-
+| Current state of the gateway ||security.request request= gatestat || security.gatestat
+|-
+| Lists of zones  ||security.request request= zonelist || security.zonelist
+|-
+| Individual zone details  ||security.request request= zoneinfo || security. zoneinfo
+|-
+| Current zone state  ||security.request request= zonestat || security. zonestat
+|-
+| Lists of areas  ||security.request request= arealist || security.arealist
+|-
+| Individual area details  ||security.request request= areainfo || security. areainfo
+|-
+| Current area state  ||security.request request= areastat || security.areastat
+|}
+
+
+==== Trigger Messages ====
+Trigger Messages are a response to a change in state within the gateway, area or zone. This can be the result of a command message requesting the gateway to perform an action or it can be the result of external influences such as a zone being triggered.
+
+The following table illustrates events that can occur on the security system and what the corresponding xPL security schema message would be to communicate the occurrence of the event.   
+
+{|  border="1" align="center"
+| '''Event'''||'''Messages'''									
+|-
+|Start up||security.gateway event=ready
+|-						
+|Sensor triggered (3) ||	security.area event=alert <br>security.zone event=alert 
+|-		
+|Sensor tampered (2,3) || security.area event=tamper  <br> security.zone event=tamper  <br> security.gateway event=alarm
+|-		
+|Alarm triggered by zone sensor (3)||security.area event=alarm <br> security.zone event=alarm <br> security.gateway event=alarm
+|-
+|Sensor returned from<br>tamper/trigger/alarm(3)|| security.area event=normal <br> security.zone event=normal 
+|-					
+|Armed (1) ||security.gateway event=armed area-list/zone-list
+|-
+|Disarmed (1) ||security.gateway event=disarmed area-list/zone-list
+|-
+|AC failed ||security.gateway event=ac-fail
+|-
+|AC returned||security.gateway event=ac-restored
+|-
+|Battery low|| security.gateway event=low-battery 
+|-
+|Battery returned|| security.gateway event=battery-ok
+|-
+|Configuration changed (1) ||security.gateway event=changed
+|-
+|Arm failed (3)|| security.gateway event=error code=1
+|}
+Note: (1) event generated by keypad device or xPL message has the same reaction<br>
+(2) This event can occur when the gateway is either armed or disarmed. Tamper event should cause trigger the alarm unless the zone is bypassed or isolated. <br>
+(3) Messages in relation to areas are only sent if the zone is a member of one or more areas. A separate message is generated for each area the zone is a member of.<br>
+
+
+==Schema Details==
+===Command Messages===
+====security.basic====
+ security.basic
+ { 
+ command=arm-away|arm-home|disarm|panic|isolate|bypass|enable
+ [area-list=id,id,â€¦,id]
+ [zone-list=id,id,â€¦,id]
+ [user=id]
+ [delay=#|Default]
+ [duress=true|false]
+ [latchkey=true|false] }
+
+This schema defines the basic commands that control the behaviour of a security system.  Sending a command that results in a zoneâ€™s state being changed will generate a security.zone trigger message in response.
+
+'''command=arm-away'''<br>
+'''[area-list=id,id,â€¦,id]'''<br>
+'''[zone-list=id,id,â€¦,id]'''<br>
+'''[user=id]'''<br>
+'''[delay=#|Default]'''<br>
+'''[latchkey=true|false]'''<br>
+Attempt to arm the security system in "away" mode.  This is the typical or full arming mode.  All zones that are not isolated or bypassed are armed.  If a perimeter zone fails to arm, it will respond with a security.gateway with event=error message, and the system will not be armed.  
+If the system was already in arm-home mode, the effect will be just to arm the additional â€œperimeterâ€ zones. An area-list is optional, if not provided or area-list=all all areas are armed. If a delay is provided, then the system will wait for the specified number of seconds before arming. 
+The latchkey option tells panels that support this feature to send a notification when a designated latchkey user disarms the system.  This is used mainly to allow parents to know when their kids have arrived home.
+
+'''command=arm-home'''<br>
+'''[area-list=id,id,â€¦,id]'''<br>
+'''[user=id]'''<br>
+'''[delay=#|Default]'''<br>
+Attempt to arm the security system in "home" mode (called "stay" by some systems).  Typically this means that all zones of type â€œperimeterâ€ that are not isolated or bypassed are armed, and the others left unarmed.  If a perimeter zone fails to arm, it will respond with a security.gateway with event=error message, and the system will not be armed.  If the system was already in arm-away mode, the effect will be to disarm any â€œinteriorâ€ zones.  If a delay is provided, then the system will wait for the specified number of seconds before arming. Only zones that are of type "perimeter" are armed when an area-list is provided, others are ignored.
+
+'''command=disarm'''<br>
+'''[user=id]'''<br>
+'''[duress=true|false]'''<br>
+'''[area-list=id,id,â€¦,id]'''
+'''[zone-list=id,id,â€¦,id]'''
+Disarm the security system.  security.gateway with event=disarmed message will contain an area-list/zone-list of the devices that should be disarmed, the default is all. The optional user field my be required for authentication of the user making the request.  The optional duress field is used to indicate whether disarming was under duress, in which case a silent alarm may be activated. 
+
+'''command=panic'''<br>
+'''[user=id]'''<br>
+The panic command triggers the alarm no matter what state the zones are in.  The alarm can then be turned off by sending a disarm command.  
+
+'''command=isolate'''<br>
+'''zone=id'''<br>
+'''[user=id]'''<br>
+Isolate zones.  The zones to be isolated are provided in the zone element.  If a zone is isolated, it does not send any security.basic trigger messages (apart from the initial event=isolated message), and cannot trigger an alarm.  A zone that is isolated is automatically enabled and removed from isolated state when the system is disarmed. User parameter maybe by required by the gateway to verify the user making the request.
+
+'''command=bypass'''<br>
+'''zone=id'''<br>
+'''[user=id]'''<br>
+Bypass zones.  The zones to be bypassed are provided in the zone element. As with isolated zones, if a zone is bypassed, it does not send any security.basic trigger messages (apart from the initial event=bypassed message), and cannot trigger an alarm.  Unlike isolated zones, however, a zone that is bypassed retains that state until the bypass is turned off with an enable command. User parameter maybe by required by the gateway to verify the user making the request.
+
+'''command=enable'''<br>
+'''zone=id'''<br>
+'''[user=id]'''<br>
+Enable zones, removing their isolated or bypassed states.  The zones to be included are provided in the zone-list element. Any zones in the list that are isolated or bypassed revert to the enabled state. User parameter maybe by required by the gateway to verify the user making the request.
+
+'''area-list'''<br>
+List of areas that should respond to the command.  Areas are listed in any order, as a comma-separated list of ids with a maximum length of 128 characters.  Multiple area-list= entries may be used in the message to get around this limit, although an individual id cannot be split across lines.  
+The reserved area id â€œallâ€ can be used to as a shorthand way to include all areas. Excluding the area-list will have the same effect as â€œallâ€.
+
+'''user=id'''<br>
+Optional name or code that authenticates the users request.  Some gateways may require this field to be supplied.
+
+'''delay=#|default'''<br>
+The optional delay parameter is used only when sending an arm command.  It specifies the delay in seconds before the entry and exit zones are armed to enable the user to leave the building without triggering the alarm. 
+The security system internally knows which zones are an entry points and will allow the system to arm even though these zones are triggered. After arming the alarm will be triggered if these devices do not clear before the delay period expires. The word â€œdefaultâ€ may be used instead of a number, in which case the default exit delay of the alarm system will be used instead. Not providing the delay will have the same effect as providing â€œdefaultâ€.
+
+'''duress=true|false'''<br>
+The optional duress field is used to indicate whether disarming was under duress, in which case a silent alarm may be activated. This may not be implemented on all gateways
+
+====security.request====
+ security.request
+ {
+ request=gateinfo|zonelist|arealist|zoneinfo|areainfo|gatestat|zonestat|areastat
+ [zone=id]
+ [area=id]
+ }
+
+This schema allows the sender to discover the capabilities and current status of the security gateway and its zones. 
+
+'''request=gateinfo'''<br>
+Requests the sending of a security.gateinfo message containing details of the xPL connector software.
+
+'''request=zonelist'''<br>
+Requests the sending of a security.zonelist message that lists all the zone ids used by the system.  Details of each zone can then be found by passing each id into request=zoneinfo messages.
+
+'''request=arealist'''<br>
+Requests the sending of a security.arealist message that lists all the area ids used by the system.  Details of each area can then be found by passing each id into request=areainfo messages.
+
+'''request=zoneinfo'''<br>
+'''zone=id'''<br>
+Requests the sending of a security.zoneinfo message describing the specified zone.
+
+'''request=areainfo'''<br>
+'''area=id'''<br>
+Requests the sending of a security.areainfo message describing the specified area.
+
+'''request=gatestat'''<br>
+Requests the sending of a security.gatestat message describing the current state of the gateway.
+
+'''request=zonestat'''<br>
+'''zone=id'''<br>
+Requests the sending of a security.zonestat message describing the current state of the specified zone.
+
+'''request=areastat'''<br>
+'''area=id'''<br>
+Requests the sending of a security.areastat message describing the current state of the specified area.
+
+===Status Messages===
+These are sent in response to security.request messages.  Many of these status messages are also sent as triggers in response to other events.  For details, see the section on Trigger Messages.
+
+====security.gateinfo====
+This message is sent in response to a security.request message with request=gateinfo, and provides information on the xPL gateway software.
+
+ security.gateinfo
+ {
+ protocol=[X10|UPB|CBUS|ZWAVE|INSTEON|RF|TCP]
+ description=
+ version=
+ author=
+ info-url=
+ zone-count=#
+ area-count=#
+ gateway-commands=
+ zone-commands=
+ area-commands=
+ }
+
+This schema describes the xPL gateway software.  It is sent as an xPL status message in response to an hvac.request with request=gateinfo.
+
+'''protocol='''<br>
+A very short, mnemonic name for the underlying HA protocol this gateway is talking to. If you have a new protocol not listed, please send a note and we'll add it to the list (keep the name short (1-8 characters), with no spaces and in upper case).  NOTE: This is informational ONLY - a client should not tailor its interaction with the gateway based on this. If you ever find that necessary, the underlying gateway is broken and needs to be fixed by its author.
+ 
+'''description=<br>'''
+Summary description of this gateway. Something in simple but helpful to an end user like "xPL to RFXCOM X10 Security gateway". 
+
+'''version=<br>'''
+Version of this gateway. This should be a "raw" version number (that is, it should not be proceeded with a V or a Version or anything -- V1.0 is NOT valid, 1.0 would be). There is no structure otherwise imposed on this version as it should be informational only. 
+
+'''author=<br>'''
+Name of the author (company or person) of this gateway. 
+
+'''info-url=<br>'''
+URL of a website where more information about the gateway can be found. 
+
+'''zone-count=#<br>'''
+Number of zones managed by this gateway.  A list of zone ids can be obtained by sending a security.request messages with request=zonelist.
+
+'''area-count=#<br>'''
+Number of areas managed by this gateway.  A list of area ids can be obtained by sending a security.request messages with request=arealist.
+
+'''gateway-commands=<br>'''
+List of security.basic commands that are supported by the gateway.  The list should be comma separated and contain only commands defined in the security.basic schema. A full featured device would contain the following values:
+ arm-home, arm-away, disarm, panic
+
+'''zone-commands=<br>'''
+List of security.basic commands that are supported by zones.  These commands will require a zone id or a zone-list. The list should be comma separated and contain only commands defined in the security.basic schema. A full featured device would contain the following values:
+ enable, bypass, isolate, arm-away, disarm
+
+'''area-commands=<br>'''
+List of security.basic commands that are supported by areas.  These commands will require an area-list.  The list should be comma separated and contain only commands defined in the security.basic schema. A full featured device would contain the following values:
+ arm-home, arm-away, disarm
+
+
+====security.zonelist====
+This message is sent in response to a security.request message with request=zonelist.
+
+ security.zonelist
+ {
+ zone-list=id,id,â€¦,id
+ [zone-list=]
+ }
+
+'''zone-list=id,id,â€¦id'''<br>
+List of zones managed by this gateway.  Zones are listed in any order, as a comma-separated list of ids with a maximum length of 128 characters.  Multiple zone-list= entries may be used in the message to get around this limit, although an individual id cannot be split across lines.  Applications should make no assumptions about the content of the ids â€“ they may be names or numbers or a combination.  There is one reserved zone id â€“ â€œallâ€ â€“ which is used to represent all zones together.  Details of each zone can be obtained by submitting a security.request with request=zoneinfo.
+
+====security.arealist====
+This message is sent in response to a security.request message with request=zonelist.
+
+ security.arealist
+ {
+ area-list=id,id,â€¦,id
+ [area-list=]
+ }
+
+'''area-list=id,id,â€¦id<br>'''
+List of areas.  Areas are listed in any order, as a comma-separated list of ids with a maximum length of 128 characters.  Multiple area-list= entries may be used in the message to get around this limit, although an individual id cannot be split across lines.  Applications should make no assumptions about the content of the ids â€“ they may be names or numbers or a combination.  There is one reserved area id â€“ â€œallâ€ â€“ which is used to represent all areas together.  Details of each area can be obtained by submitting a security.request with request=areainfo.
+
+====security.zoneinfo====
+This message is sent in response to a security.request message with request=zoneinfo.
+
+ security.zoneinfo
+ {
+ zone=id
+ zone-type=perimeter|interior|24hour
+ alarm-type=burglary|fire|flood|gas|other
+ area-count=id
+ area-list=id,id,â€¦,id
+ [area-list=]
+ [room=]
+ [floor=]
+ [comment=]
+ }
+
+'''zone=id<br>'''
+The id of the zone for which we have requested information.  The id must be one of those returned in the security.gateinfo message.
+
+'''zone-type=perimeter|interior|24hour<br>'''
+Permiter zones ususally consist of door sensors, window sensors etc, but allow movement within a room while the zone is armed.  An interior zone may also use motion sensors to trigger an alarm.  A 24hour zone is one that is always active, irrespective of the current system arm/disarm state.  This zone type is used with smoke, flood and gas sensors.
+
+'''alarm=burglary|fire|flood|gas|other<br>'''
+The type of monitoring that this zone is for.  This allows the appropriate alarm to be raised according to the kind of problem that has occurred.
+
+'''area-count=#<br>'''
+Number of areas to which this zone belongs.  Some systems do not have a concept of areas, so there is no requirement for zones to belong to them.  In this case, the area-count should be zero, and the following area-list empty.
+
+'''area-list=id,id,â€¦id<br>'''
+List of areas to which the zone belongs.  Areas are listed in any order, as a comma-separated list of ids with a maximum length of 128 characters.  Multiple area-list= entries may be used in the message to get around this limit, although an individual id cannot be split across lines.  Applications should make no assumptions about the content of the ids â€“ they may be names or numbers or a combination.  Details of each area can be obtained by submitting a security.request with request=areainfo.
+
+'''room=<br>'''
+Optional. Room or Location of the zone (e.g. "Kitchen").
+
+'''floor=<br>'''
+Optional. Floor of the building where the zone is located (e.g. "First Floor").
+
+'''comment=<br>'''
+Optional. Any comments/notes about the zone.
+
+====security.areainfo====
+This message is sent in response to a security.request message with request=areainfo.
+
+ security.areainfo
+ {
+ area=id
+ zone-count=id
+ zone-list=id,id,â€¦,id
+ [zone-list=]
+ [room=]
+ [floor=]
+ [comment=]
+ }
+
+
+'''area=id<br>'''
+The id of the area for which we have requested information.  The id must be one of those returned in the security.arealist message.
+
+'''zone-count=#<br>'''
+Number of zones in the area.  Each area should contain at least one zone.  The zone-count is provided to enable sanity checking of the following zone-list.
+
+'''zone-list=id,id,â€¦id<br>'''
+List of zones that make up the area.  Zones are listed in any order, as a comma-separated list of ids with a maximum length of 128 characters.  Multiple zone-list= entries may be used in the message to get around this limit, although an individual id cannot be split across lines.  Applications should make no assumptions about the content of the ids â€“ they may be names or numbers or a combination.  Details of each zone can be obtained by submitting a security.request with request=zoneinfo.
+
+'''room=<br>'''
+Optional. Rooms or Locations covered by the area (e.g. "Hall and Stairs").
+
+'''floor=<br>'''
+Optional. Floor(s) of the building covered by the area (e.g. "First Floor").
+
+'''comment=<br>'''
+Optional. Any comments/notes about the area.
+
+====security.gatestat====
+A security.gatestat message is sent in response to a security.request message with request=gatestat.  It reports the status of the gateway, which in many cases represents an alarm console.  Changes to these items are reported in individual security.gateway trigger messages.
+
+ security.gatestat
+ {
+ ac-fail=true|false
+ low-battery=true|false
+ status=armed|disarmed|alarm
+} 
+
+'''ac-fail=true|false<br>'''
+True when the mains power to the alarm system fails.
+
+'''low-battery=true|false<br>'''
+True when the battery backup for the alarm system need to be replaced.  This is independent of any low-battery states reported by areas and zones.
+
+'''status=armed|disarmed|alarm<br>'''
+If one or more zones or areas are armed then the status is reported as armed, with the exception of 24-hour. If one or more zones or areas are alarmed then the state is overridden as alarmed, the zone or area that triggered this state is populated along with the alarm-type.
+
+====security.zonestat====
+A security.zonestat message is sent in response to a security.request message with request=zonestat.  It reports the complete current status of the specified zone.  Changes to these items are reported in individual security.event trigger messages.
+
+ security.zonestat
+ {
+ zone=id
+ armed=true|false
+ alert=true|false
+ alarm=true|false
+ state=isolated|bypassed|enabled 
+ [alarm-type=burglary|fire|flood|gas|silent|duress|other]
+ [tamper=true|false]
+ [low-battery=true|false]
+ [dark=true|false]
+ }
+
+'''zone=id<br>'''
+Id of the zone that was specified in the request message.
+
+'''armed=true|false<br>'''
+Whether the zone is armed.
+
+'''alert=true|false<br>'''
+Whether the zone sensor has been activated.  A zone is secured and can be armed only if its security sensors are not reporting an alert.
+
+'''alarm=true|false<br>'''
+Whether the alarm has been triggered by this zone.  The alarm state will be true if an alert occurs while the zone is armed, or at any time if the zone type is 24hour.
+
+'''alarm-type=burglary|fire|flood|gas|silent|duress|other<br>
+The alarm-type is only included if alarm=true, and indicates the nature of the problem detected.  The silent and duress alarm-types should only be used as alternatives to the burglary alarm type, and are used with silent alarms, or to signal the disarming of the alarm under duress.
+
+'''tamper=true|false<br>
+Optional item for those zones whose sensors can report whether they have been tampered with (for example when the case has been opened).  If missing from the message, this value should be assumed to be false.
+
+'''state=isolated|bypassed|enabled <br>
+Describes the state of the zone in relation to is ability to be armed and send alert events. enabled is the normal default state and means the zone is fully operational. When bypassed, a zone is effectively removed from the system.  It does not arm, and sends no zone events.  This is a useful short term measure to deal with faulty zones. An isolated zone remains so until a disarm command is received, at which time the state reverts to enabled.  To exclude a zone more permanently, it should be put into bypass.  If missing from the message, this value should be assumed to be false.
+
+'''low-battery=true|false<br>
+Optional item for reporting when a battery-powered zone sensor needs to have that battery replaced.  If missing from the message, this value should be assumed to be false.
+
+'''dark=true|false<br>
+Optional item included to cater for motion detectors that are designed to work with security lights, and report when it has become dark enough for the light to need to be triggered when motion is sensed.  If missing from the message, this value should be assumed to be false.
+
+====security.areastat====
+A security.areastat message is sent in response to a security.request message with request=areastat.  It reports the current status of the specified area.  Changes to these items are reported in individual security.zoneevnt trigger messages.
+
+ security.areastat
+ {
+ area=id
+ armed=true|false
+ alert=true|false
+ alarm=true|false
+ [alarm-type=burglary|fire|flood|gas|silent|duress]
+ [tamper=true|false]
+ [low-battery=true|false]
+ [dark=true|false]
+ }
+
+'''area=id<br>
+Id of the area that was specified in the request message.
+
+'''armed=true|false<br>
+Whether the area is currently armed.  The armed state is true if all the zones within the area that are not isolated or bypassed are also set to armed.
+
+'''alert=true|false<br>
+The area is in alert if any of itâ€™s zones are reporting an alert.  Zones that are isolated or bypassed are ignored.
+
+'''alarm=true|false<br>
+The area is in alarm if any of its zones are in alarm.  Zones that are isolated or bypassed are ignored.
+
+'''alarm-type=burglary|fire|flood|gas|silent|duress<br>
+The alarm-type is only included if alarm=true, and indicates the nature of the problem detected.  The silent and duress alarm-types should only be used as alternatives to the burglary alarm type, and are used with silent alarms, or to signal the disarming of the alarm under duress.
+
+'''alarm-zones=id,id,â€¦,id<br>
+If alarm=true, then this entry provides a comma separated list of the areaâ€™s zones that are in alarm.
+
+'''tamper=true|false<br>
+The tamper state is set to true if any of the areaâ€™s zones are also reporting a tamper state.
+
+'''low-battery=true|false<br>
+Optional item for reporting when a at least one of areaâ€™s zones needs to have its battery replaced.  If missing from the message, this value should be assumed to be false.
+
+'''dark=true|false<br>
+Optional item included to cater for motion detectors that are designed to work with security lights, and report when it has become dark enough for a light to need to be triggered when motion is sensed.  The area reports dark=true if any of its zones are dark.  If missing from the message, this value should be assumed to be false.
+
+===Trigger Messages===
+Trigger messages are sent whenever the state of the alarm system, area or zone changes.  Trigger messages are also sent in response to alarm keyfob or other remote control commands.
+
+====security.gateway====
+Sent whenever a gateway has an update that clients should be aware of. 
+
+ security.gateway
+ {
+ event=ready|changed|ac-fail|ac-restored|low-battery|battery-ok|armed|disarmed|alarm|error
+ [area-list=id,id, ,id]
+ [zone-list=id,id, ,id]
+ [zone=id]
+ [area=id]
+ [alarm-type=burglary|fire|flood|gas|silent|duress|other]
+ [user=id]
+ [error=]
+ } 
+
+'''event=ready'''<br>
+Sent out as soon as the gateway has completed any initialization and is ready to fields requests as well as send out updates. This should only be sent out once, though a client should allow it at anytime and not be negatively affected.  It is primarily meant to allow security clients to "discover" a new gateway automatically (such clients could also broadcast a request for gateway info via security.request and track the responders). 
+
+'''event=changed'''<br>
+Sent when the gateway wants clients to know the configuration of the gateway has changed. This could the result of a zone or area being added or removed.  This would normally indicate to a client that it should run a new discovery process on the gateway to pickup on changes.
+
+'''event=ac-fail'''<br>
+Sent when the mains power to the alarm system fails and the system is running off battery backup.
+
+'''event=ac-restored'''<br>
+Sent when the mains power to the alarm system is restored.
+
+'''event=low-battery'''<br>
+Sent when the battery backup for the alarm system is running low, ie a power outage generated and ac-fail message and the alarm system battery backup is now running low. If no ac-fail then battery needs to be replaced.
+
+'''event=battery-ok'''<br>
+Internal battery has increased in charge.
+
+'''event=armed'''<br>
+'''[area-list=id,id, ,id]'''<br>
+'''[zone-list=id,id, ,id]'''<br>
+Sent when one or more an area's or zone's are armed. The returned zone and area lists show the current system status rather then the changes that have just occurred.
+
+'''event=disarmed'''<br>
+'''[area-list=id,id, ,id]'''<br>
+'''[zone-list=id,id, ,id]'''<br>
+'''[user=id]'''<br>
+When one or more zones or areas are disarmed. Either a zone-list or area-list must be populated. Optional user field is provided for scripting information such as who just arrived home.
+
+'''event=alarm'''<br>
+'''[zone=id]'''<br>
+'''[area-list=id,id, ,id]'''<br>
+'''alarm-type=burglary|fire|flood|gas|silent|duress|other'''
+Sent when an zone or area is triggered while in the armed state. The zone relates to the zone that caused the alarm state to occur. 
+
+'''event=error'''<br>
+'''[area-list=id,id, ,id]'''<br>
+'''[zone-list=id,id, ,id]'''<br>
+'''[message=text]'''<br>
+'''[code=#]'''<br>
+A custom error message sent from the gateway. Message is free form text description of the issue. Code is optional error code specific to the panel. Zone and area information is used to describe the devices that the error relates to. An error code=1 should be used to inform the panel that an arm has failed. Error code of 2 should be used for failed authentication requests. Codes above 10 are device specific and 3 â€“ 9 should be reserved for future use of the security schema.
+
+
+====security.zone====
+Sent when one of the zone's states changes.
+
+ security.zone
+ {
+ event=alarm|alert|tamper|isolated|bypassed|normal 
+ zone=id 
+ [low-battery=true|false] 
+ [alarm-type=burglary|fire|flood|gas|silent|duress|other] 
+ }
+
+'''event=alarm'''<br>
+'''zone=id'''<br>
+'''alarm-type=burglary|fire|flood|gas|silent|duress|other'''<br>
+Reports a change in a zoneâ€™s alarm state.  The alarm can be stopped by sending a security.basic command message with the command=disarm.  The alarm-type indicates the nature of the problem detected.  The silent and duress alarm-types should only be used as alternatives to the burglary alarm type, and are used to trigger a silent alarm, or to signal the disarming of the alarm under duress.
+
+'''event=alert'''<br>
+'''zone=id'''<br>
+Sent when the zone enters an alert state. An alert is not an alarm â€“ alert events are not sent if the event caused the alarm to be triggered (see event=alarm) when the zone is armed. Alerts are also not sent when the zone is isolated or bypassed
+
+'''event=tamper'''<br>
+'''zone=id'''<br>
+Reports a change is a zone sensorâ€™s tamper state.
+
+'''event=isolated'''<br>
+'''zone=id'''<br>
+Reports that a zone has been isolated from the alarm system.  Isolation is automatically removed when the system is next disarmed.  To bring a zone out of isolation, a security.basic command with command=enable should be sent.  For permanent exclusion, the zone should be bypassed instead.
+
+'''event=bypassed'''<br>
+'''zone=id'''<br>
+Reports that a zone has been bypassed.  Zones may be bypassed at anytime.  A bypassed zone will send no messages (aside from this initial bypassed event), and cannot trigger an alarm.  To bring a zone out of bypass, a security.basic command with command=enable should be sent.
+
+'''event=normal'''<br>
+'''zone=id'''<br>
+Reports that a zone has returned to a normal state of operation. This message is sent when exiting from a precious state, for example when a zone is no longer triggered.
+
+''' [low-battery=true|false]'''<br>
+Used to indicate that a batteries powering a sensor need to be replaced (state=true).  This optional tag can be placed on all messages.
+
+====security.area====
+Sent when one of the area's states changes.
+
+ security.area
+ {
+ event=alarm|alert|tamper|normal 
+ area=id 
+ [low-battery=true|false] 
+ [alarm-type=burglary|fire|flood|gas|silent|duress|other] 
+ }
+
+'''event=alarm'''<br>
+'''area=id'''<br>
+'''alarm-type=burglary|fire|flood|gas|silent|duress|other'''<br>
+Sent when the alarm has been triggered (i.e. when one or more of the areaâ€™s zones enter an alarm state).  The alarm can be stopped by sending a security.basic command message with the command=disarm.  The alarm-type idicates the nature of the problem detected.  If more than one alarm-type is reported, then multiple event=alarm messages will be sent.  The silent and duress alarm-types should only be used as alternatives to the burglary alarm type, and are used to trigger a silent alarm, or to signal the disarming of the alarm under duress.
+
+'''event=alert'''<br>
+'''area=id'''<br>
+Sent when the area enters an alert state.  The alert event is sent if any of the zones in the area are in the alert state.  An alert is not an alarm â€“ alert events are not sent if the event caused the alarm to be triggered (see event=alarm) when the area is armed. Alerts are also not sent when the area is isolated or bypassed.
+
+'''event=tamper'''<br>
+'''area=id'''<br>
+Reports a change is an areaâ€™s tamper state
+
+'''event=normal'''<br>
+'''zone=id'''<br>
+Reports that an are has returned to a normal state of operation. This message is sent when exiting from a precious state, for example when an area is no longer triggered.
+

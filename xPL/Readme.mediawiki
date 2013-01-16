@@ -1,0 +1,44 @@
+== [[XPL Specification Document|The Core Protocol]] ==
+
+The key document produced by the xPL Project is the [[XPL Specification Document|xPL Protocol]], a detailed description of the xPL message structure, the maximum length of message elements etc.
+
+This should be the first port of call for developers looking to port xPL to a new platform.
+
+== [[xPL Message Schema|Message Schemas]] ==
+
+xPL uses well defined message schemas to ensure that applications from different [[xPL Vendors|vendors]] can interact sensibly. Message Schemas are extensible, and define not only the elements which should be present in a message, but also the order in which they appear. 
+
+This allows simple devices and applications to parse messages more easily.
+
+[[xPL Message Schema|All of the existing message schemas can be found here]]. Developers looking to create a new schema are invited to post their discussion on the [http://www.xpl-home.org/forums xPL forums] in the developers area.
+
+== XHCP - Enabling Smart Clients ==
+
+The [[xPLHal Server]] forms the "brains" of an xPL network - this is usually a service style application without a GUI. In order to manage this service, set up events to happen when certain xPL conditions are detected etc, a client such as [[xPLHal Manager]] is used.
+
+These two components do not have to be installed on the same PC - they communicate using the [[XHCP Protocol]] which uses the same port as xPL, but uses a TCP connection (like HTML) rather than the simpler UDP.
+
+== XML Vendor Files ==
+
+Each [[xPL Vendors|xPL Vendor]] maintains an XML "fragment" - this is a description of the applications and devices supplied by that vendor, which allows front end applications to present the abilities of a particular xPL device in plain language that is accesible to end users.  It can allow an application which previously knew nothing about a new xPL device or service to offer seamless control of the device to an end user.  It also makes scripting and automating the device via tools like [[ xPLHAL ]] and [http://www.xPL4Java.org/xPL4Java DCM] much easier and foolproof.
+
+The xPL project maintains a masterlist of all plugins including their download locations. This list is used to allow software to automatically discover and download new plugins for a vendor. Applications can download the masterlist and from there get access to all individual vendor plugins. The master list is located at http://xplproject.org.uk/plugins.xml (It also includes alternative download locations).
+
+The easiest way to make a vendor XML file is to use the [[sample vendor XML file]].  There is a GUI tool for creating and editing the XML files called [http://www.xpl4java.org/xPL4Java/ XPE] (xPL Plugin Editor).  It's written in Java, so it's available for most platforms.  It helps to insure that your plugin file is valid and contains only known/valid options.
+
+Once your vendor plugin file is ready, you must host it on a web site at a permanent web address (URL) and then ask to have the plugin entry added to the master list of plugins.  You can do so through the [http://xplproject.org.uk/newvendor/index.php Request a Vendor ID] page. Support for the whole process is available through the forums.
+
+== Hub Specification ==
+
+Most people will have to run a hub - this is an application which will act as a switchboard on a PC, Mac or other device using the IP Protocol. Within almost all operating systems, only one service can "bind" to a specific port - as all xPL messages arrive on port 3865, a Hub is required to allow multiple apps to run within the same computer.
+
+In September 2005, the xPL Project clarified the situation with applications using embedded hubs - it is not valid for an application to embed it's own hub - instead, users are encouraged to install one of the hubs available before running any other xPL application. The documentation needed to write a new hub implementation can be found in the [[XPL hubs specification|xPL Hub Specification]] document.
+
+== Bridging Subnets ==
+
+The broadcast nature of xPL means that xPL messages are confined to a single subnet.  Bridges can be used to transmit messages between subnets.  There is no formal specification for writing bridges but there are some [[Notes On Bridge Implementation|notes on implementation]].
+
+== Platform Specific arrangements ==
+
+For some platforms there are specific agreements for shared settings etc. If you intend to develop, please take notice and try to stay aligned. The details can be found on the [[PlatformSpecifics|Platform Specifics page]]
+

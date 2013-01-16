@@ -1,0 +1,1103 @@
+xPL Lighting Schema
+
+==Overview==
+
+This schema attempts to provide a reasonable "abstraction" of lighting and
+device control capability provided by a number of different HA protocols such
+as X10, CBUS, Insteon, UPB, ZWave, etc. The primary target is lighting,
+though other simple control devices can be accessed (those that can easily
+make sense of on/off status and possibly have a dim level setting). It is not
+meant to expose full access to the entire range of possibilities that may be
+provided by a HA protocol.
+
+The goal is not to create a "lowest-common-denominator" schema, but one that
+represents a reasonable, useful level of control and device representation for
+typical lighting needs (lights and simple appliances). Each HA protocols xPL
+gateway would ideally support both a "native" schema as well as this one.
+This allows less-common, more complicated devices that use that underlying HA
+protocol to be controlled with the native schema while still allowing a higher
+level of control over the more common lighting devices.
+
+For example, an X10 xPL gateway would be well served by supporting the
+standard X10 schema and this lighting schema. Then the various non-lighting
+X10 devices (thermostats, sprinkler systems, etc) can still be addressed via
+the X10 schema while the majority of the X10 lights can be easily handled via
+this schema.
+
+==Terminology==
+
+===HA Protocol===
+This describes the actual underlying technology used to control the devices.
+Examples include X10, Insteon, UPB, CBUS, ZWave, etc. HA protocols may be
+powerline based, RF, hardwired or combinations -- the physical layer is
+immaterial to this schema.
+
+===xPL gateway===
+This describes the software that sits on the xPL network and is attached to
+an HA protocol interface (i.e. a CM11 for X10, PIM for UPB, etc). It sends
+and receives xPL messages and translates them to/from the underlying HA
+protocol. Depending on the abilities of the underlying HA protocol, it may
+be a very thin layer (translating literally from one format to another with
+no other processing) or thicker (taking more abstract commands from xPL and
+possibly turning them into multiple HA protocol commands, caching and
+tracking device state, etc).
+
+===Network===
+A collection of devices that have unique identifiers. When there are
+multiple networks, there may be more than one device with the same ID but
+separately addressable because they are each on different networks.
+
+Most HA Protocols support only one network (i.e. X10 would NOT treat each
+house code as a network -- there is only one X10 network in a house). Even
+those that support more than one rarely have more than one in use the same
+house.
+
+Each network has an ID that is unique within a gateway.  All gateways have
+the concept of the "prefered" network -- the network commands are addressed
+to when the network is not otherwised defined.
+
+===Device===
+Something that can be uniquely identified and controlled. Most often a
+light switch, in-wall dimmer, appliance module, etc.  Each device has 
+an ID that is unique within a Network.
+
+===Channels===
+For HA protocols that support them, channels are individual controllable
+"loads" within a unique device ID. Most devices have a single load, but
+some specialty devices may support 2, 4 or more controllable loads. For
+HA protocols that do not have a concept of channels (or something
+applicable), they will just expose each device as having a single channel.  
+Channels are always integers, starting at 1.
+
+===Fade Rate===
+Fade rates describe how long it should take a controlled load to change from
+it's current state to a new state. For example, a switch could be
+configured to take 3.3 seconds to "fade up" from off to full on.  Fade rates
+are not supported by all protocols and those that do not understand them 
+will silently ignore them.
+
+===Scene===
+A scene is a single identifier that when used, can command an arbitrarily
+defined group of lighting devices to change themselves to a new level. Most
+switches/devices that support scenes can be associated with more than one
+scene and for each scene, the switch typically has a unique "dim-level"
+that it will goto when that scene is requested (activated, in the lighting
+schema parlance). In some protocols, scenes are known as links. Each Scene 
+has an ID that is unique within a Network.
+
+
+
+==Technical Details & Implementation Notes==
+
+===Identifiers===
+Different HA protocols use different ID formats for networks, devices and scenes. 
+The gateway author is free to use any sort of ID format that they think is best, 
+though in most cases, it will hopefully use a form that is most meaningful to the
+underlying protocol (i.e. UPB might be simple numbers for devices while X10 might
+be use like B4 and F15).
+
+The important point is the users of the lighting schema should make no
+assumptions about what a valid ID is or isn't. They can query the
+gateway implementing the schema for a list of network/device/scene IDs and they should
+only send commands using an ID from that list.
+
+Making any assumption about the actual content of an ID will most likely
+result in an application breaking when used on another lighting scheme.
+The only 'property' of an ID you can depend on is that each one is
+unique within the lighting gateway that supplied them.
+
+lighting gateway authors are encouraged to keep IDs as short as
+possible. Numbers are best, but if there is something more 'natural' to
+the underlying protocol, you can use that. You should go out of your way
+to insure that identifiers do not in any way describe or label a network/device/scene 
+(i.e. do NOT use a mnemonic name as an identifier) as that would break the most
+important rule for an identifier -- that they are unique, but otherwise have
+no meaning (if you put meaning there, it overloads the identifier and can
+result in some 'clients' incorrectly assuming things from the name or
+using it to show to an end user).
+
+===Scenes===
+For HA protocols that support scenes, it's important they understand what
+xPL commands expect the scene to do with a command. For HA protocols that
+do not support scenes directly (or consistently), the gateway should make a
+'best effort' to support scenes in software (allowing scenes to be defined
+in the gateway and having the gateway respond to scene commands by then
+commanding the appropriate devices). It is not a hard requirement that a
+gateway implements scenes, but it's strongly encouraged.
+
+Because underlying HA protocols often do things differently and those
+difference can easily result in impact on the upper level gateway and schema
+interactions, you should make any xPL apps that uses this schema as flexible
+and open to receiving any sort of message at any time and in any order as
+possible. Assuming order (of items in a message or of messages themselves) is
+generally a sure way to find things break the first time a new lighting
+gateway is installed/used.
+
+Still, there are some areas that need further clarification so that all users
+of the lighting schema can work from some basic assumptions.
+
+Like device IDs, Scene IDs are handed out to 'clients' from a lighting
+gateway using the scnlist request. Only IDs that are returned in that
+list are valid to send in scene based commands. The actual value/content
+of an ID is entirely up to the gateway author -- some scenes IDs may be
+simple numbers, others may be short alpha-numeric IDs. But you cannot and
+should not attempt to parse them.
+
+lighting gateway authors are encouraged to keep scene IDs as short as
+possible. Numbers are best, but if there is something more 'natural' to
+the underlying protocol, you can use that. You should go out of your way
+to insure that identifiers do not in any way describe a scene (i.e. not use
+a mnemonic name) as that would break the rule on identifiers -- that they
+are unique, but otherwise have no meaning (if you put meaning there, it
+overloads the identifier and can result in some 'clients' incorrectly
+assuming things from the name or using it to show to an end user.
+
+
+Here is a summary of actions scenes should be able to do:
+
+* activate<br/>All devices assigned to a scene should "select" whatever settings they have for that device for the specified scene ID. As a result, one activate command may turn on (or off) a number of devices and each device may be set to a different dim settings.
+
+* deactivate<br/>All devices assigned to a scene should set their level to 0 (i.e. turn off).  For protocols where deactivate is not natively supported, the gateway author should implement this as a synonym for goto level=0.
+
+* goto<br/>This is very different from activate. With goto, all devices that are part of the scene are all commanded to go to the SAME device level/state at the SAME rate. This ignores the individual settings in each switch associated with that scene and is just using the fact the device is associated with the scene to "select" it for the goto action. So Goto on a scene is more like a group command than each device assuming it's normal settings for that scene.
+
+===Channels===
+Channels are always numbered 1-n (where n is the highest channel) with a
+"wildcard" channel of 0. It is possible for a device to have no channels,
+but such devices cannot be controlled (i.e. can't be turned on, off, dimmed,
+etc). Some controller keypads fall into this category.
+
+Each channel has it's own state (that is, level) and when commanding the
+device or receiving status reports from the device, it's important to make
+sure that a multi-channel device reports and tracks each channels levels
+independently.
+
+All devices have a "primary" channel -- that is, a channel that makes the
+most sense to use when you are not sure which channel to control. This is a
+fall-back and for multi-channel devices, may be deceptive (as for a 4-load
+dimmer block, there may be no reason why one dimmer is any more primary than
+another). For devices with no channels, the primary-channel will be passed
+as -1. Primary channel is never 0 (wildcard)
+
+Addressing channel 0 is a wildcard address. All channels on the device will
+respond to the command presented to the device. If the underlying HA
+protocol supports the idea of channels but does NOT support the idea of a
+wildcard channel, it's up to the xPL gateway implementer to "simulate"
+wildcard behavior (even if that means issuing a separate command to each
+channel when receiving a wildcard channel in an xPL message).
+
+If the underlying HA protocol does not support channels at all (i.e. there
+is always just one controllable load on a device), then it should expose its
+devices as single channel devices and support them being addressed as
+channel 0 or 1.
+
+===Fade Rates===
+Fade rates are not uniform -- every HA protocol will likely have a different
+set of supported fade rates (it's possible that an underlying HA protocol
+may have support for any valid rate of time as a fade rate, but most HA
+protocols have a fixed menu/list of possible fade rates).
+
+Further, many HA protocols have no ability to control how fast the switched
+load changes from one level to another. It may be set into the hardware,
+but not exposed to the underlying HA protocol.
+
+Fortunately, support or non-support of fade rates doesn't result in this
+protocol breaking down -- worst case is that the light will achieve the
+desired level at a rate other than requested. This has no impact on the
+where the device actually winds up.
+
+In general, xPL gateways should accept any value for a fade rate and then
+map that value to the closest one supported for that HA protocol. Fade
+rates are always expressed as number of seconds and that number can be
+fractional (i.e. 3.3 is a valid fade rate). Fade rates run from 0
+(immediate change) to 86400 (1 full 24 hour day, in seconds), though most
+devices that support fade rates top out around an hour.
+
+In addition, a special fade rate of 'default' is allowed in most cases.
+'default' means that switch should change to a new level at whatever rate it
+is configured for.
+
+When requesting info on a gateway, it can optionally return a list of supported
+fade-rates (in the fade-rate-list=).  This is optional and so a client should not
+depend on its presence.  However, it can be useful to help present to the user
+a list of fade rates.  The list will NEVER include the default fade rate and even
+if a gateway does publish a fade-rate-list, it should still accept any valid
+number and pick the closest supported fade rate to that number for actual
+fading.
+
+===Dimming levels and non-dimming devices===
+Some devices are dimmable and some are not. The ability to be dimmed is
+actually tied to each channel on a device (as one channel may be dimmable
+and another on the same device may not be). When getting information on
+a device, you can easily determine whether a channel is dimmable or not.
+
+For dimmable devices, the dim levels are from 0 to 100%. For devices where
+ON and OFF state are important, 0% should be treated as OFF (i.e. X10
+generally leaves lights on a little even at their lowest dim level unless
+they explicitly receive an OFF command). It's up to the xPL gateway to
+handle this detail.
+
+An additional two 'virtual' levels are also supported by lighting commands
+(though are never handed back as reports): 'default' and 'last'. 'default'
+tells the light to go to the level it normally goes to when manually turned
+on. Some light devices support the ability to define a 'default' on level
+they go to (other than 100%) when asked to turn on, but not given a specific
+level (i.e. manual use). 'last' should tell the device to go to the level
+it was last at (usually just before it was turned off). When sending
+trigger and status reports for devices, the lighting gateway will NEVER send
+the words 'default' or 'last' -- it always sends a value from 0 to 100.
+However, scene reports may include these if the report was based on a
+scene goto command that requested default or last.
+
+Since not all HA protocols support the ability to have a default on level or
+to be turned on to it by computer control or have the ability to remember
+and be commanded to go to the 'last' level, it is acceptable for the gateway
+to treat this as 100% instead. Ideally, if the underlying HA protocol
+supports one (or both), the gateway will pass the correct request along, but
+100% is a valid 'fallback' position.
+
+Any other device levels outside the range of 0-100 are invalid and should
+result in the xPL gateway rejecting the message.
+
+For non-dimming devices, the preferred values should be 0 (off) and 100
+(on), though the xPL gateway should support any non-0 dim level as being On.
+That said, any triggers/status reports from the gateway for a non-dimming
+devices must ALWAYS be only 0 or 100).
+
+
+===Manual Device State Change Reporting===
+Newer lighting devices are supporting the ability to report back when a
+switch is directly changed by a person. For example, a wall switch can
+report back that someone manually turned it on and what level it's at.
+
+This is a very desirable feature, though not all HA protocols support it and
+even for those that do, some specific devices may not. There is a flag in
+the capabilities for a device that indicates if the device does send out
+reports when it's manually operated or not.
+
+For HA protocols where such reporting is not supported or for devices 
+that do not support it, the user of the xPL lighting schema should be aware
+that what they believe is the current state of the device may not be.
+Further, the xPL gateway in these circumstances should make no assumptions
+about what level a device was last at and when an xPL command comes in to
+set the device to a level, should *always* transmit that level request to
+the device (even if the gateways internal state tracking shows the command
+would result in no change -- the switch could have been manually changed).
+
+For HA protocols where device states are reported, it's acceptable for the
+gateway to "drop" requests to change a device level when you are sure the
+actual device is already at that level.
+
+===When triggers are sent by the gateway===
+For devices, trigger messages are only sent when something changes the state
+channel on of a device. If you issue an xPL command to change a light to a
+certain level and that light is already at that level (and the gateway is
+sure of that), there will be no trigger message sent out.
+
+However, if you send an xPL command that does result in a level change or
+the device itself reports a new level, a trigger should be reported as soon
+as any interaction with the device is complete. This means triggers are
+very much asynchronous and can happen at any time (which, granted, is pretty
+much the description of a trigger).
+
+For scenes, trigger messages should be looked at less as changes in state
+and more as "activity reports". Scenes, by themselves, have no state, so
+the xPL gateway does not need to (and should not) check to see a scene
+request will result in a change or not -- it's always sent and it always
+generates a scene trigger message.
+
+In short, whenever anyone issues a scene command, there will be a trigger
+sent out that describes that scene action (whether the scene action was
+received via the HA protocol or from another xPL device).
+
+Also, when a scene "action" is taken, it is expected that ALL affected
+devices of that scene will send a state change report (if, in fact, the
+scene action does change it). Further, the scene trigger message should be
+sent by the xPL gateway to the xPL network sent BEFORE any device reports
+are sent (though because scene actions may depend on the underlying HA
+protocol, this cannot be guaranteed when something other than the xPL
+gateway initiates a scene action).
+
+For example, if devices 1, 7 and 10 are all configured to go to level 100%
+when scene 32 is activated and device 10 is already at level 100, there
+should be a scene trigger message followed by 2 device triggers (for devices
+1 and 7 -- the actual order of the device report triggers does not matter
+and isn't guaranteed).
+
+In many HA protocols, activation of scenes will not result in the actual
+device reporting it's new state, so it will be up to the xPL gateway to
+know which devices and levels are associated with a scene and issue the
+device state change reports itself.
+
+For the gateway itself, a trigger should be sent whenever the configuration 
+of the gateway has changed.  This could be a new lighting device being added, 
+changed or removed, a scene being added, changed or removed or anything else
+about that gateway that would be noticed by a client during discovery (i.e. 
+anything addressed by this schema).
+
+A client receiving notice of the gateway changing should initiate a discovery
+process to pickup any changes and install them.
+
+===Discovery Process===
+An xPL client can query an xPL gateway about the devices and capabilities it
+provides. Devices/scenes/networks/etc can be queried for state at any time,
+but in general, at startup, there is a preferred way that such a client
+should approach discovering what is out there.
+
+NOTE: Its perfectly OK for a client to not ask for any info at all if it
+"knows" what devices it wants to control. It's also entirely OK to send
+requests for info in ANY order and at ANY time while the gateway is running.
+
+The preferred means to fully interrogate an xPL gateway is as follows:
+
+# Send a request for gateway info/capabilities
+# Send a request for a list of networks
+# For networks you are interested in, ask for network info, one at a time
+# Send a request for a list of scenes on a selected network
+# For scenes you are interested in, send a request for details on each scene, one at a time
+# Send a request for a list of devices on a selected network
+# For devices you are interested in, send a request for details on each device, one at a time.
+
+A few things to note:
+* You should have only one request outstanding at a time. You do not want to flood the xPL network and since the underlying network protocol (UDP) has no error recovery, if you did send too many requests at once, some would likely get lost.
+
+* When sending a request, you should ideally start a timer after sending and wait up to 5 seconds for the requested info. If you have not received the response in 5 seconds, send it again. Do this no more than 5 times, after which you should assume the gateway is having problems and you should stop all further discovery activity.
+
+* the netlist, devlist and scnlist requests result in a list of valid identifiers being sent back. If you want to read each of the returned identifiers, you should adhere to the last two points -- send a request for only one network/scene/device at a time, wait for a response with timeout/retrying as needed, parse the response and then move on to the next network/scene/device.
+
+These are suggestions only -- you can of course, come up with your own approaches. For more generic xPL "clients", the netlist/devlist/scnlist
+are the only reliable way to know what valid identifiers are for each item.
+
+==Schema Details==
+
+
+===Commands===
+
+====lighting.basic====
+
+This defines commands that all gateways are expected to support. It allows
+devices and scenes to be controlled. Sending a command that results in the
+devices state being changed will generate a trigger message, but a command
+that results in no change (turning off a light that is already off) will not
+generate a trigger message in response to the command.
+
+  command=[goto|activate|deactivate]
+  [network=ID]
+  [[device=ID]|[scene=ID]]
+  [channel=#]
+  [level=0-100]
+  [fade-rate=[default|<time>]
+
+command=goto<br/>
+"goto" requires a level= and can optionally take a fade-rate=. goto can be applied to scenes or devices.
+
+command=activate<br/>
+This command applies only to scenes (the are ignored for devices). Sending
+activate for a scene causes all devices that are associated with that scene
+to assume the state described when the scene was setup. Each device
+assigned to a scene may be set to go to a different level at different rate.
+
+Don't confuse activate with goto. Goto directed at a scene will cause all
+devices associated with that scenes ID to "goto" the level you pass. In
+that case, you are basically addressing a 'group' of devices, all of which
+will have the same level after the scene is played out.
+
+Contrast that with activate where each device may have a different level
+after the scene is activated, based on how the switch was setup to respond
+to that scene.
+
+command=deactivate<br/>
+This command applies only to scenes (the are ignored for devices). Sending
+deactivate for a scene causes all devices that are associated with that scene
+to turn off.  This is not quiet the same as issueing a goto to level=0 for
+the scene.  If the underlying HA protocol understands the concept of deactivate,
+it'll just send this out and it'll act as expected.  If the underlying HA protocol
+does not understand this, the gateway will likely just issue a series of 
+goto level=0 for all devices in the scene.  While the end result is the 
+same, there can be a semantic differences for some protocols.
+
+network=ID<br/>
+is optional and if not supplied, defaults to the primary network. Most of
+the time, it is not needed.
+
+device=ID -or- scene=ID<br/>
+A command needs one and only one of these to determine the device or the
+scene the command will take action on. Note that not all commands are
+applicable to all devices.
+
+channel=#<br/>
+Optional. If not supplied, the command applies to all channels of the device
+(i.e. channel=0). Most devices have a single channel (a channel usually
+being something that is controlled, like a dimmer or relay). In devices
+that control two or more items, you can direct messages to specific device
+on a specific channel. If channel numbers are supplied, they are in the
+form of 1, 2 or 3 (or higher). Channel 0 is taken as "all channels".
+
+level=[0-100|default|last]<br/>
+For the on/goto commands, level= tells what level, between 0% and 100%, the
+device should go to. For non-dimming devices, level is generally
+interpreted as 0=off and >0=on.
+
+A level of 'default' should tell the switch to go to it's 'default' on level
+(switches that support this allow a level to be set other than 100% when the
+device is manually turned on). If the device/HA protocol does not support
+the concept of turning on at the 'default' level, it should instead goto
+100% when receiving this request
+
+A level of 'last' should tell the switch to go to it's last light level.
+For switches that support this, the 'last' light level is usually the level
+the switch was at when it was last on. If the device/HA protocol does not
+support the concept of turning on at the 'last' level, it should instead
+goto 100% when receiving this request.
+
+Depending on how the switch is configured and the optional presence of the
+fade-rate= option, the switch may immediately switch to the new level or may
+slowly ramp or fade to that level over time.
+
+Keep in mind that with level=default and level=last, a "client" cannot know
+for sure what level the device is now at (when sending a level=50, you can
+reasonably assume the device has a level of 50 now).  If the request actually
+changes the level of the device, you can expect to see a device status
+report, but until then, you should consider the lights state "undefined" 
+or at least "unchanged" (you do NOT want to assume you know what the gateway
+will do because different gateways are going to handle this differently.
+do NOT want to assume what the gateway is going to 
+
+fade-rate=[default|<time>]<br/>
+Optional. For the on/off/goto commands, fade-rate= tells the device how
+long it should take, in seconds, to achieve the level= specified. "default"
+tells the switch to use whatever default fade rate it was programmed with
+(each switch can have a "default" fade rate set for it). Anything else is
+the number of seconds, from 0 to 86400, that the device should fade up or
+down over to get to the new level.
+
+Since each device may only support a fixed list of possible fade rates, the
+xPL gateway will take the passed time and find the closest supported fade
+rate to the time and use it. For an advanced HA protocol that allows an
+arbitrary time interval (none that I know of at this writing), the gateway
+would just pass this value on. For HA protocols that cannot support setting
+a fade rate to change over, the fade-rate is simply and silently ignored.
+
+====lighting.request====
+
+This allows a sender to learn about capabilities, networks, devices and scene
+that can be controlled and addressed
+
+  request=[gateinfo|netlist|netinfo|devlist|devinfo|devstate|scnlist|scninfo]
+  [network=ID]
+  [[device=ID]|[scene=ID]][channel=#]
+
+request=gateinfo<br/>
+Send back information in a lighting.gateinfo status message about this
+lighting gateway.
+
+request=netlist<br/>
+Send back a list of known networks for this gateway via a lighting.netlist
+status message.
+
+request=netinfo<br/>
+Send information back about the specified (or default) network using the
+lighting.netinfo schema. If a request for information on an unknown
+network is made, the reply will contain only the network= and
+status=not-found.
+
+request=devlist<br/>
+send a list of known device IDs using the lighting.devlist schema.
+
+request=devinfo<br/>
+sends all that we know about a given device using the lighting.devinfo
+schema. If a request for information on an unknown device is made, the
+reply will contain only the network=, device= and status=not-found.
+
+NOTE: devinfo describes the entire device and will not honor any channel=
+being passed in the request (all info for all channels is returned).
+
+request=devstate<br/>
+send the current state of a channel on a device in a lighting.device
+schema message. If a request for information on an unknown device is
+made, the reply will contain only the network=, device= and
+status=not-found.
+
+NOTE: state is also returned in the devinfo request though this is a a
+"lower-overhead" request. You tend to ask for devinfo only once and
+future updates, when needed, uses this.
+
+NOTE: If the device has multiple channels and you do not select one (or
+you select channel 0), you'll get a separate state report back for
+each channel.
+
+NOTE: If the device has no channels, you will not get a response back.
+
+request=scnlist<br/>
+send a list of known scene IDs via the lighting.scnlist schema.
+
+request=scninfo
+sends all that we know about a given scene using the lighting.scninfo
+schema. If a request for information on an unknown scene is made, the
+reply will contain only the network=, scene= and status=not-found.
+
+network=ID<br/>
+is optional and if not supplied, defaults to the primary network. Most of
+the time, it is not needed.
+
+device=ID, scene=ID<br/>
+If asking for information on a device or scene, the appropriate identifier
+must be supplied. When asking for information not related to these three
+items, then none of them should appear. In any case, either one or or none
+of these will appear in a message -- never more than one.
+
+channel=#<br/>
+Optional. Used only for a devstate request, allows querying a specific
+channels state. If the channel= is omitted or passed as 0, then a separate
+device state report is sent back for each channel on the device.
+
+===Status Messages===
+
+Status messages are sent in response to valid lighting.request messages.
+
+====lighting.gateinfo====
+Provides basic information about the gateway
+
+  status=ok
+  protocol=[X10|UPB|CBUS|ZWAVE|INSTEON]
+  description=
+  version=
+  author=
+  info-url=
+  net-count=#
+  preferred-net=ID
+  scenes-ok=[true|false]
+  channels-ok=[true|false]
+  fade-rate-ok=[true|false]
+  [fade-rate-list=#[,#....]]
+
+status=ok<br/>
+Status is always OK since there are no possible invalid parameters for the
+request.
+
+protocol=<br/>
+A very short, mnemonic name for the underlying HA protocol this gateway is
+talking to. If you have a new protocol not listed, please send a note and
+we'll add it to the list (keep the name short (1-8 characters), with no
+spaces and in upper case)
+
+NOTE: This is informational ONLY - a client should not tailor it's
+interaction with the gateway based on this. If you ever find that
+necessary, the underlying gateway is broken and needs to be fixed by it's
+author.
+
+description=<br/>
+Summary description of this gateway. Something in simple but helpful to an
+end user like "xPL to UPB PIM-based gateway".
+
+version=<br/>
+Version of this gateway. This should be a "raw" version number (that is, it
+should not be proceeded with a V or a Version or anything -- V1.0 is NOT
+valid, 1.0 would be). There is no structure otherwise imposed on this
+version as it should be informational only.
+
+author=<br/>
+Name of the author (company or person) of this gateway.
+
+info-url=<br/>
+URL of a website where more information about the gateway can be found.
+
+net-count=#<br/>
+Number of networks available to this gateway (will be 1 almost all the
+time).
+
+NOTE: This will never be 0. There is ALWAYS at least one network, even for
+HA protocols that do not have the concept of "network"s.
+
+preferred-net=ID<br/>
+The network ID number of the preferred (or default) network for this
+gateway. All commands that arrive without an explicit network= entry will be
+applied to this network.
+
+scenes-ok=[true|false]<br/>
+If the underlying HA protocol does not support scenes and the xPL gateway
+does not support scenes, this will be no. If the HA protocol supports
+scenes OR the xPL gateway has implemented "virtual" scenes, then the value
+is true
+
+NOTE: Treat this as a HINT only!<br/>
+Even if a gateway says it does not support scenes, it must reply correctly
+to a scnlist (with and empty list) as well as provide suitable values in
+the netinfo and devinfo messages for scene count (i.e. scene-count=0).
+
+channels-ok=[true|false]<br/>
+Indicates if the underlying HA protocol supports the idea of multiple
+channels on devices. If so, this is true. If not, this is false.  
+
+NOTE: Even if channels are not supported by the underlying hardware, all controllable devices should report having one channel and that one channel also being the primary channel.  Only non-controllable devices (like some keypad controllers) should ever report having no channels.
+
+NOTE: Treat this as a HINT only!<br/>
+Even if the gateway says it does not
+support channels, all channel related items described in this schema still
+must be supplied and supported. In such cases, the gateway should make sure
+all devices described support a single channel and send reports/triggers out
+exactly as if the protocol DID support multi-channel devices and you were
+describing a device that supported only one channel.
+
+fade-rate-ok=[true|false]<br/>
+Indicates if the underlying HA protocol supports the idea of setting the
+rate a change to a devices level should take place. If a fade rate can
+be sent along with a command to change a devices level, then this should be
+true. If the protocol cannot be used and will be ignored, then return false.
+
+NOTE: Treat this as a HINT only!<br/>
+Even if a gateway/protocol does not support fade rates, they still be
+specified where required (many places, fade rates are optional can be
+omitted). The gateway must accept a fade rate on appropriate commands,
+though it will probably just ignore it when processing the rest of the
+command.
+
+fade-rate-list=#[,#[,#...]]<br/>
+Optional.  If the gateway supports fade rates and has a fixed, predetermined list 
+of valid fade rates, it can enumerate them here.  The rates are in seconds and can
+have decimals (i.e. 0,3.3,5,6.6).  Rates must be ordered from lowest to highest
+(in terms of time) and like all lists in the lighting schema, there can be only
+numbers and commas (no white space).  The "default" fade rate is NEVER included
+in this list (only numerics).
+
+Even if a fade-rate-list= is provided, the gateway should still accept ANY valid
+number as a fade-rate (if it supports fade-rates) and convert it to the nearest
+valid fade rate.
+
+This list is optional.  If the gateway cannot determine the list or the underlying
+protocol doesn't support fade rates OR allows *any* # of seconds as a fade rate (making 
+a list of discreet values meaningless), then it can be omitted.  This list can 
+be valuable to user interfaces in presenting a list of known rates to a user, so
+if at all possible, the gateway author should try to include them
+
+
+====lighting.netlist====
+Enumerates all known networks supported by the gateway
+
+  status=ok
+  network=ID,ID,ID,ID....
+
+status=ok<br/>
+Status is always OK since there are no possible invalid parameters for the
+request.
+
+network=<br/>
+There can be many network= entries in the message. Each one will describe a
+number of valid network IDs. Devices are listed as individual IDs.
+
+Possible sample entries look like:
+
+network=1,2,3,AFT,FORE,P,M<br/>
+network=A,B,C,D<br/>
+network=S<br/>
+
+You should not assume any order, count or quantity of the network= entries.
+Accept them in any order and make no assumptions about what range of IDs
+each entry contains.
+
+There is no white space between elements in the list. Everything after the equals sign is
+either an identifier or a comma.  You should also keep an eye on how many characters are
+in a single network= entry.  xPL dictates a limit of 128 chararcters per entry. Any gateway
+that creates/formats these entries should start a new network= after no more than 100
+characters or so (though it wouldn't be a bad idea to use a smaller number).
+
+====lighting.netinfo====
+Provides detailed information about a specific network
+
+  network=ID
+  status=[ok|not-found]
+  name=[network name, if known]
+  password=[network password, if any]
+  device-count=#
+  scene-count=#
+
+network=ID<br/>
+Network ID the netinfo request was made for
+
+status=[ok|not-found]<br/>
+If the network ID in the originating request was invalid or unknown,
+not-found is returned. If the network ID was OK, ok is returned. There may
+be other values introduced in the future, so assume "ok" is success and
+anything else is failure
+
+name=<br/>
+Optional textual name of the network, if any.
+
+password=<br/>
+Optional password for network. Some networks require a password in order to
+transmit certain commands. This can be text, numbers or anything else. If
+password is present in the message with no value, that indicates an empty
+password (vs no password= meaning passwords are not needed and/or supported
+by the network).
+
+device-count=#<br/>
+scene-count#<br/>
+The number of known scenes and devices on this network. If scenes are not
+supported, then this must contains scene-count=0.
+
+
+====lighting.devlist====
+Enumerates the valid devices on a network
+
+  network=ID
+  status=[ok|not-found]
+  device-count=#
+  device=ID,ID,ID,ID...
+
+network=ID<br/>
+Network ID the devlist request was made for
+
+status=[ok|not-found]<br/>
+If the network ID or device ID in the originating request were invalid or
+unknown, not-found is returned. If the network ID and device ID were OK, ok
+is returned. There may be other values introduced in the future, so assume
+"ok" is success and anything else is failure.
+
+device=<br/>
+There can be many device= entries in the message. Each one will describe a
+number of valid device IDs. Devices are listed as individual IDs with
+multiple IDs on an entry being possible.
+
+Possible sample entries look like:
+
+device=1,2,3,4,5,6,7,8<br/>
+device=A1,A2,A3,A4,A5,A6<br/>
+device=LT1,LT2,LT3<br/>
+
+You should not assume order, count or quantity of the device= entries.
+Accept them in any order and make no assumptions about what range of IDs
+each entry contains.
+
+There is no white space between elements in the list. Everything after the equals sign is
+either an identifier or a comma. You should also keep an eye on how many characters are
+in a single device= entry.  xPL dictates a limit of 128 chararcters per entry. Any gateway
+that creates/formats these entries should start a new device= after no more than 100
+characters or so (though it wouldn't be a bad idea to use a smaller number).
+
+====lighting.devinfo====
+Provides detailed information about a specific device
+
+  network=ID
+  device=ID
+  status=[ok|not-found]
+  name=[device name, if known]
+  report-on-manual=[true|false]
+  [room=room name]
+  [floor=floor name]
+  [comment=comments]
+  [manufacturer=id,name]
+  [product=id,name]
+  [firmware-version=x.y]
+  channel-count=#
+  primary-channel=#
+  channel=#,is-dimmable (true/false),default-fade-rate,level(0-100)
+  scene-count=#
+  scene=sceneID,channel,level,fade-rate
+
+network=ID<br/>
+Network ID the devinfo request was made for
+
+device=ID<br/>
+Device ID the devinfo request was made for
+
+status=[ok|not-found]<br/>
+If the network ID or device ID in the originating request were invalid or
+unknown, not-found is returned. If the network ID and device ID were OK, ok
+is returned. There may be other values introduced in the future, so assume
+"ok" is success and anything else is failure.
+
+report-on-manual=[true|false]<br/>
+Should be true if the underlying device reports when manually used and false
+when the device does not report changes when manually used. If this is false,
+the underlying gateway cannot make any assumptions about the state of this
+device and should send all control requests to it unconditionally, even if
+it thinks that the command would not change the device (i.e. request to set
+a like to 100% and the gateway already thinks the light is at 100%).
+
+For devices with no exposed manual control, this should return true, even if
+the device/protocol do not handle state reports, since nothing other than
+HA protocol and xPL messages can affect it.
+
+name=<br/>
+Name of the device. This should be succinct and should not include a
+room/location (i.e. "Ceiling light")
+
+room=<br/>
+Optional. Room or Location of the devices controlled load (i.e. "Kitchen")
+
+floor=<br/>
+Optional. Floor of the building where the devices controlled load is
+(i.e. "Attic")
+
+comment=<br/>
+Optional. Any comments/notes about the device.
+
+manufacturer=id,name<br/>
+Optional. Manufacturer of the switch. This is passed with an identifier
+first and then a textual name. If you only have a name, you can pass an
+identifier of 0. Nothing in this schema describes what valid identifiers
+are -- they are device/protocol specific. A typical value might be
+manufacturer=0,Leviton
+
+product=id,name<br/>
+Optional. Product name of the switch. This is passed with an identifier
+first and then a textual name. If you only have a name, you can pass an
+identifier of 0. Nothing in this schema describes what valid identifiers
+are -- they are device/protocol specific. A typical value might be
+product=0,WS16383 Wall Dimmer
+
+firmware-version=x.y<br/>
+Optional. If you'd like to pass along the firmware of the underlying
+device, it should be passed as a raw version. That is, it should not have a
+V or Version preceding it. V1.0 is invalid where 1.0 is valid. The actual
+format/layout of the version is not specified as it may vary from switch to
+switch.
+
+channel-count=#<br/>
+Number of channels (loads) on this device. This can be from 0 (for a device
+that has no controllable load (like a button controller box)) to 'n'. There
+will be one channel= in the message for each channel specified here.
+
+primary-channel=#<br/>
+Which channel is the primary channel on this device. For devices with only
+a single channel, this will be 1. For devices with NO channels, this should
+be passed as -1. For any other devices, this should be the channel that
+makes most sense as being a "general" target for non-channel specific
+commands. If there is no difference in the importance/relevance of any
+channel on the device, use 1.
+
+NOTE: This CANNOT be 0 and MUST be either -1 (only valid if channel-count=0)
+or from 1 to the value in channel-count.
+
+channel=#,is-dimmable,default-fade-rate,level(0-100)<br/>
+One entry in the message body per channel. You should not assume the
+channels will be listed in ascending order. Each channel consists of 4
+items of information:
+
+channel # - this is a number from 1 to what was in channel-count=
+
+is-dimmable - is the device channel dimmable - true or false
+
+default-fade-rate - default fade rate for this channel (this CANNOT be
+"default"). It must be a number between 0 and 86400. Fractional values
+are allowed (i.e. 0, 1.3, 10.5 are OK). For devices that do not support
+explicit fade rates, this should be 0.
+
+level - current level this channel is at. For non-dimming devices, this
+will always be either 0 or 100. For dimming devices, a value between
+0 and 100 (NEVER will be "default" or "last").
+
+scene-count=#
+Number of scenes this device is associated with. This can be any number
+from 0 to the maximum number of scenes supported by a device.
+
+scene=sceneID,channel,level,fade-rate<br/>
+If scene-count= is not zero, then there is one scene= entry to describe each
+scene the device is associated with. You should not assume the order of the
+scene= entries.
+
+sceneID - Scene ID for this device (must be a valid Scene ID)<br/>
+channel - Channel this scene controls (can be 0 for all channels)<br/>
+level - level this device channel should go to when the scene is activated (which
+is either a number from 0 to 100, "last" or "default").<br/>
+fade-rate - fade rate, in seconds, for channel to go to when the scene<br/>
+is activated or "default" to use the devices default fade rate
+for the channel
+
+====lighting.scnlist====
+Enumerates the Scenes available on a given network
+
+  network=ID
+  status=[ok|not-found]
+  scene-count=#
+  scene=ID,ID,ID,ID...
+
+network=ID<br/>
+Network ID the scnlist request was made for
+
+status=[ok|not-found]<br/>
+If the network ID in the originating request was invalid or unknown,
+not-found is returned. If the network ID was OK, ok is returned. There may
+be other values introduced in the future, so assume "ok" is success and
+anything else is failure.
+
+scene-count=#<br/>
+Number of scenes on this network. If the gateway does not support scenes,
+this must still be responded to with a scene-count=0.
+
+scene=<br/>
+There can be many scene= entries in the message. Each one will describe a
+number of valid scene IDs. Scenes are listed individually and multiple
+scene IDs can appear on each entry.
+
+Possible sample entries look like:
+
+scene=1,2,3,4,5,6,7,8<br/>
+scene=SA,SB,SC,SD<br/>
+scene=Q,Q1,Q2<br/>
+
+You should not assume order, count or quantity of the scene= entries.
+Accept them in any order and make no assumptions about what each entry
+contains.
+
+There is no white space between elements in the list. Everything after the equals sign is
+either an identifier or a comma. You should also keep an eye on how many characters are
+in a single scene= entry.  xPL dictates a limit of 128 chararcters per entry. Any gateway
+that creates/formats these entries should start a new scene= after no more than 100
+characters or so (though it wouldn't be a bad idea to use a smaller number).
+
+====lighting.scninfo====
+Provides details information about a specific scene
+
+  network=ID
+  scene=ID
+  status=[ok|not-found]
+  name=[scene name, if known]
+  device-count=#
+  device=deviceid,channel,level,fade-rate
+
+network=ID<br/>
+Network ID the scninfo request was made for
+
+scene=ID<br/>
+Scene ID the scninfo request was made for
+
+status=[ok|not-found]<br/>
+If the network ID or Scene ID in the originating request were invalid or
+unknown, not-found is returned. If the network ID and scene ID were OK, ok
+is returned. There may be other values introduced in the future, so assume
+"ok" is success and anything else is failure.
+
+name=<br/>
+Name of the scene. This should be succinct, describe its "activated"
+state (i.e. "Early Morning Lights") and be presentable and understandable by
+an end user.
+
+device-count=#<br/>
+Number of devices associated with this scene. This can be any number from
+0 up.
+
+device=deviceid,channel,level,faderate<br/>
+There is one entry for each device associated with this scene. Each entry
+describes the device, channel, level and fade rate that a device would go
+to when the scene is activated.
+
+deviceid - ID of a device associated with this scene<br/>
+channel - channel within that device this scene acts on (or 0 for all
+channels)<br/>
+level - level devices channel should go to when scene is activated. This will
+be a value from 0 to 100, "default" or "last".<br/>
+fade-rate - fade rate of change to new level in seconds or "default" to use
+the devices default fade rate for each channel.
+
+===Triggers===
+
+Triggers for devices are only sent when the state of the device changes, either due to a
+command or due to something on the lighting network commanding a switch (or a
+end-user pressing the switch). If you issue a command that changes nothing
+(i.e. turn off a light that is already off) no trigger is sent.
+
+====lighting.gateway====
+
+Sent whenever a gateway has an update that clients of it should be aware
+of.
+
+  report=[gateway-ready|gateway-changed]
+
+report=gateway-ready<br/>
+Sent out as soon as the gateway has completed any initialization and is
+ready to fields requests as well as send out updates.  This should only
+be sent out once, though a client should allow it at anytime and not
+be negatively affected.  
+
+It's primarily meant to allow lighting clients to "discover" a new gateway automatically (such clients could also broadcast a request for gateway info via lighting.request and track the responders).
+
+report=gateway-changed<br/>
+Sent when the gateway wants clients to know the configuration of the gateway
+has changed.  This could the result of a new device being added, a scene
+being added or changed, etc.  
+
+This would normally indicate to a client that it should run a new discovery process on the gateway to pickup on changes.
+
+====lighting.device====
+
+Sent whenever a channel on a devices level changes for any reason (device
+reports a change, other program changes it, other xPL messages changed it,
+etc).
+
+  network=ID
+  device=ID
+  channel=#
+  state=[on|off]
+  level=0-100
+
+network=ID<br/>
+Network ID the device status report applies to
+
+device=ID<br/>
+Device ID the device status report applies to
+
+channel=#<br/>
+Channel # on device the status report applies to (this will NEVER be 0 --
+always will be a specific channel)
+
+state=[on|off]<br/>
+Indicates if the devices channel is, generally, on or off (specifically, if
+the channels level is 0, this is off. If it's any other value, this is on)
+
+This is a convenience item only to make scripting and such against these
+triggers easier and provides nothing not already provided in the level=
+item
+
+level=#<br/>
+Level this devices channel is at, from 0 to 100. 0 is "off" for a device
+channel. For a non-dimming device, only 0 (off) or 100 (on) will be
+reported. This will NEVER be "default" or "last", but the actual current
+level of the device.
+
+====lighting.scene====
+
+Scenes do not "change state" like devices. Rather, they are 'triggers'
+themselves. As such, scene reports are not changes in status, but simply
+"activity reports" than the described scene activity occurred on the lighting
+network.
+
+  network=ID
+  scene=ID
+  action=[activate|deactivate|goto]
+  [level=0-100|default|last]
+  [fade-rate=[default|<time>]
+  [source=ID]
+
+
+network=ID<br/>
+Network ID the scene activity report applies to
+
+scene=ID<br/>
+Scene ID the scene activity report applies to
+
+action=<br/>
+Describes what scene activity just occurred. Note that any lighting.basic
+command= to turn a scene on or off will result be reported in a trigger as
+action=goto with the appropriate levels of 0 or 100 on the activity report.
+
+level=#<br/>
+Only for action=goto, it describes the level all devices associated with
+that scene have been directed to go to, 0-100. If the activity was
+initiated with a scene command, the level *may* also be the words 'default'
+or 'last' (see the section on dimming levels for more details).
+
+fade-rate=<br/>
+Only for action=goto and only if the original scene command included a
+fade-rate. It is the rate the devices should use to fade between their
+current level and the new level. This is a number of seconds, from 0 to
+86400 or the word "default" to indicate each device should fade up at it's
+default rate.
+
+source=ID<br/>
+When it can be determined the scene activity report was caused by a device
+on the lighting network, this is the ID of that device.  Some actions can
+take place without any device being involved (i.e. computer initiated actions)
+and some protocols do not capture and pass the source of a scene action, so 
+this is optional and cannot be depended on.
+

@@ -1,0 +1,401 @@
+==HVAC Schemas==
+
+==Overview==
+This schema family aims to allow hvac (heating, ventilation and air-conditioning) devices (for example, thermostats) be managed via a common set of xPL messages.  The goal is to make basic control as straightforward as possible, but with enough sophistication for the schema to be useable with as wide a range of devices as possible.
+
+Note that this schema represents only the demand side of an hvac system - the requests for heating and cooling.  The direct control of undefloor heating, furnaces, air-conditioners etc is outside the scope of this schema.
+
+==Terminology==
+
+===Zone===
+A zone represents an area that can have its own hvac settings.  In many domestic settings there will be only one thermostat and one zone covering the entire house.  Others may have an additional zone controlling the underfloor heating in a bathroom, for example. In a fully zoned system, there may be as many as one zone per room.
+
+===Setpoint===
+A setpoint specifies a temperature at which certain hvac events occur.  For example, a cooling setpoint defines a temperature above which the air conditioning will be switched on.  Some thermostats support many kinds of setpoint.  The hvac schema does not define a list of these - instead, each zone reports a list of the available setpoints in its hvac.zoneinfo message.
+
+===Timer===
+A timer is available in some hvac systems to restrict the hours during which the system will operate.  This allows the user to disable heating/cooling when the house is unlikely to be occupied.
+
+===Gateway===
+This describes the software that sits on the xPL network and is attached to an HA protocol interface (i.e. a CM11 for X10, PIM for UPB, etc). It sends and receives xPL messages and translates them to/from the underlying HA protocol. Depending on the abilities of the underlying HA protocol, it may be a very thin layer (translating literally from one format to another with no other processing) or thicker (taking more abstract commands from xPL and possibly turning them into multiple HA protocol commands, caching and tracking device state, etc). 
+
+The gateway may represent a central hvac control panel or thermostat, but it is equally possible for it to be just a pathway to a collection of sensors.  For example, a PC RF receiver could implement the hvac schema for sending events received from temperature sensors, without any heating or cooling setpoints being defined.  In this case, each sensor would be assigned to a zone and would just send state change triggers to the xPL world when the temperature changed.  Another hvac gateway or an xPLHal style program could then act on these messages.
+
+==Discovery Process==
+
+An xPL client can query an xPL gateway about the system and the capabilities it provides. Zones can be queried for state at any time, but in general, at startup there is a preferred way that such a client should approach discovering what is out there. 
+
+NOTE: Its perfectly ok for a client to not ask for any info at all if it "knows" what zones exist. It's also entirely ok to send requests for info in any order and at any time while the gateway is running. 
+
+The preferred means to fully interrogate an xPL gateway is as follows: 
+#Send a request for gateway info/capabilities (hvac.request schema, request=gateinfo).
+#Send a request for the list of zones (hvac.request schema, request=zonelist).
+#For each zone listed, request the info/capabilities one at a time (hvac.request schema, request=zoneinfo)
+#The zoneinfo contains a list of setpoints - details of each of these can be obtained one at a time by sending an hvac.request with request=setpoint.
+#The current state of each zone can be obtained by sending an hvac.request message with request=zone.
+
+A few things to note: 
+*When the gateway starts up, it should send an hvac.gateway trigger message to announce its presence.  
+*You should have only one request outstanding at a time. You do not want to flood the xPL network and since the underlying network protocol (UDP) has no error recovery, if you did send too many requests at once, some would likely get lost. 
+*When sending a request, you should ideally start a timer after sending and wait up to 5 seconds for the requested info. If you have not received the response in 5 seconds, send it again. Do this no more than 5 times, after which you should assume the gateway is having problems and you should stop all further discovery activity. 
+*the zonelist requests result in a list of zones being sent back. If you want to get information for each of the returned zones, you should adhere to the last two points - send a request for only one zone at a time, wait for a response with timeout/retrying as needed, parse the response and then move on to the next zone. 
+
+==Schema Details==
+===Command Messages===
+
+====hvac.basic====
+
+ hvac.basic
+ {
+ command=hvac-mode|fan-mode|timer-mode|setpoint|timer|reset-runtime|reset-fantime
+ zone=id
+ [setpoint=name]
+ [mode=]
+ [state=]
+ [temperature=#]
+ [duration=#]
+ }
+
+The hvac.basic schema is used to control heating, cooling and ventilation demands.Â  It does not directly control a furnace or air-conditioner etc, but rather controls the thermostat(s) setting the conditions that the hvac system should attempt to fulfill.
+
+'''command=hvac-mode'''<br>
+'''zone=id'''<br>
+'''mode='''<br>
+Sets the desired mode of operation for hvac in the specified zone.  The mode must be one of those returned in the hvac-mode-list element of the zone's hvac.zoneinfo message.
+
+'''command=fan-mode'''<br>
+'''zone=id'''<br>
+'''mode='''<br>
+Sets the behaviour of the fan.  The mode must be one of those returned in the fan-mode-list element of the zone's hvac.zoneinfo message.
+
+'''command=timer-mode'''<br>
+'''zone=id'''<br>
+'''mode=on|off|auto|boost'''<br>
+'''[duration=#]'''<br>
+Sets the mode of operation of the timer.  The mode must be one of those returned in the timer-mode-list element of the zone's hvac.zoneinfo message.
+*mode=on - continuous operation, subject to the hvac-mode and the zone temperature relative to the setpoints.
+*mode=off - turns the zone off.Â  No hvac will be provided, regardless of the hvac-mode or current temperature.
+*mode=auto - the hvac system will operate only run during the timed periods.  These periods are set by sending an hvac.basic message with command=timer.
+*mode=boost - overrides the timer to allow hvac operation for a period of time.  If the zone's zoneinfo message reports boost-duration=true, then the length of the boost period can be set by including the duration= element, with the duration specified in minutes.  Otherwise, the boost will operate for the default period.  Once the boost has ended, the mode reverts to its previous setting.
+
+
+'''command=setpoint'''<br>
+'''zone=id'''<br>
+'''setpoint=name'''<br>
+'''temperature=#'''<br>
+Sets the temperature of one of the zone's setpoints.  The setpoint must be one of those returned in the setpoint-list element of the zone's hvac.zoneinfo message.  The temperature must be specified in Celsius.
+
+'''command=timer'''<br>
+'''zones=id'''<br>
+'''timer=SuMoTuWeThFrSa,hh:mm-hh:mm,hh:mm-hh:mm,...etc'''<br>
+'''[timer=]'''<br>
+Sets timed periods of operation for the hvac system in the specified zones.Â  For the timers to take effect, the timer-mode of the zone must be set to "auto".
+The timer elements set the days and times on which the hvac system will be active.Â  There can be more than one timer= element in the message.Â  This allows different time periods to be set for different days of the week (for example, additional heating at weekends, when the house may be occupied for a greater portion of the day).Â  The timer values provided in this message replace any previous timer settings, so the message must contain all the timer information for the specified zone.
+
+The format of the timer value consists of a list of two-character codes for the days of the week (each code is simply the first two letters of the day) on which the timer will be active (with no delimiters), followed by a comma separated list of time periods.Â  Each time period is formed from a start time and end time separated by a hyphen, with each time in the form hh:mm using the 24 hour clock.
+
+For example, to set a morning and evening period during the week, and a daytime period at weekends, the message could look something like this:
+
+ hvac.basic
+ {
+ command=timer
+ zone=lounge
+ timer=MoTuWeThFr,06:30-09:00,17:00-22:30
+ timer=SaSu,08:00-23:00
+ }
+
+'''command=reset-runtime'''<br>
+'''zone=id'''<br>
+'''state='''<br>
+Resets the runtime counter for the specified hvac state to zero.  The state must be one of those returned in the hvac-state-list element of the zone's hvac.zoneinfo message.
+
+'''command=reset-fantime'''<br>
+'''zone=id'''<br>
+'''state='''<br>
+Resets the runtime counter for the specified fan state to zero.  The state must be one of those returned in the fan-state-list element of the zone's hvac.zoneinfo message.
+
+====hvac.request====
+
+ hvac.request
+ {
+ request=gateinfo|zonelist|zoneinfo|zone|setpoint|timer|runtime|fantime
+ zone=id
+ [setpoint=]
+ [state=]
+ }
+
+This schema allows the sender to discover the capabilities and current status of the hvac gateway and its zones. 
+
+'''request=gateinfo'''<br>
+Requests the sending of an hvac.gateinfo message containing details of the xPL connector software.
+
+'''request=zonelist'''<br>
+Requests the sending of an hvac.zonelist message that lists all the zone ids used by the system.  Details of each zone can then be found by passing each id into request=zoneinfo messages.
+
+'''request=zoneinfo'''<br>
+'''zone=id'''<br>
+Requests the sending of an hvac.zoneinfo message describing the specified zone.
+
+'''request=zone'''<br>
+'''zone=id'''<br>
+Requests the sending of an hvac.zone message describing the current state of the specified zone.
+
+'''request=setpoint'''<br>
+'''zone=id'''<br>
+'''setpoint=name'''<br>
+Requests the sending of an hvac.setpoint message describing the current state of the specified setpoint.
+
+'''request=timer'''<br>
+'''zone=id'''<br>
+Requests the sending of an hvac.timer message describing the current state of the zone's timer.
+
+'''request=runtime'''<br>
+'''zone=id'''<br>
+'''state='''<br>
+Requests the sending of an hvac.runtime message containing the time that the hvac system has been in the specified state since it was last reset.  The state must be one of those returned in the hvac-state-list element of the zone's hvac.zoneinfo message.
+
+'''request=fantime'''<br>
+'''zone=id'''<br>
+'''state='''<br>
+Requests the sending of an hvac.fantime message containing the time that the fan has been in the specified state since it was last reset.  The state must be one of those returned in the fan-state-list element of the zone's hvac.zoneinfo message.
+
+===Status Messages=== 
+These are sent in response to hvac.request messages.
+
+====hvac.gateinfo====
+
+ hvac.gateinfo
+ {
+ protocol=[X10|UPB|CBUS|ZWAVE|INSTEON]
+ description=
+ version=
+ author=
+ info-url=
+ zone-count=#
+ }
+
+This schema describes the xPL gateway software.  It is sent as an xPL status message in response to an hvac.request with request=gateinfo.
+
+protocol=<br>
+A very short, mnemonic name for the underlying HA protocol this gateway is talking to. If you have a new protocol not listed, please send a note and we'll add it to the list (keep the name short (1-8 characters), with no spaces and in upper case).  NOTE: This is informational ONLY - a client should not tailor its interaction with the gateway based on this. If you ever find that necessary, the underlying gateway is broken and needs to be fixed by its author. 
+
+description=<br>
+Summary description of this gateway. Something in simple but helpful to an end user like "xPL to UPB PIM-based gateway". 
+
+version=<br>
+Version of this gateway. This should be a "raw" version number (that is, it should not be proceeded with a V or a Version or anything -- V1.0 is NOT valid, 1.0 would be). There is no structure otherwise imposed on this version as it should be informational only. 
+
+author=<br>
+Name of the author (company or person) of this gateway. 
+
+info-url=<br>
+URL of a website where more information about the gateway can be found.
+
+zone-count=#<br>
+The number of zones being managed by this gateway.  The list of zone ids can be obtained by sending an hvac.request message with request=zonelist.
+
+====hvac.zonelist====
+
+ hvac.zonelist
+ {
+ zone-count=#
+ zone-list=id,id,...,id
+ [zone-list=]
+ }
+
+This schema reports the list of zones managed by the gateway.  It is sent as an xPL status message in response to an hvac.request with request=zonelist.
+
+zone-count=#<br>
+Number of zones managed by this gateway.
+
+zone-list=id,id,...,id<br>
+Comma separated list of zone names.Â  The maximum length of the list is 128 characters, but the message can contain multiple zone-list= lines to avoid this limit. Â  Details of each zone can be obtained by passing the zone name in an hvac.request message with request=zoneinfo.Â  
+
+====hvac.zoneinfo====
+
+ hvac.zoneinfo
+ {
+ zone=id
+ command-list=
+ hvac-mode-list=
+ fan-mode-list=
+ timer-mode-list=
+ setpoint-list=
+ hvac-state-list=
+ fan-state-list=
+ [boost-duration=true|false]
+ [room=room name]
+ [floor=floor name]
+ [comment=comments]
+ }
+
+This schema reports the configuration of a zone, the modes that can be set and the states that it can report.  It is sent as an xPL status message in response to an hvac.request with request=zoneinfo.
+
+zone=id<br>
+Name of the zone to which this message relates.
+
+command-list=[hvac-mode,fan-mode,timer-mode,setpoint,timer,reset-runtime]<br>
+List of commands supported by the gateway that may be used in hvac.basic messages.
+
+hvac-mode-list=<br>
+List of possible modes to which the hvac system may be set (for example, Heat, Cool, DryAir, FanOnly, Off).  The list should be comma separated with no spaces.  The hvac-mode is set by sending an hvac.basic command message with command=hvac-mode.
+
+fan-mode-list=<br>
+List of possible operating modes for the fan (for example, AutoHigh, AutoLow, OnHigh, OnLow).  The list should be comma separated with no spaces.  The fan-mode is set by sending an hvac.basic command message with command=fan-mode.
+
+timer-mode-list=<br>
+List of possible modes for the timer (for example, On, Off, Auto, Boost).  The list should be comma separated with no spaces.  The hvac-mode is set by sending an hvac.basic command message with command=timer-mode.
+
+setpoint-list=<br>
+List of setpoints used by the system (for example Cooling, DryAir, Furnace, Heating).  The list should be comma separated with no spaces.  Each setpoint is set individually by sending an hvac.basic command message with command=setpoint.
+  
+hvac-state-list=<br>
+List of operating states that the hvac-system reports (for example, Idle, Cooling, Heating).  All gateways should maintain a counter for each state, recording the duration in seconds that the system has been in that state since the last reset.  These times can be obtained by sending an hvac.request message with request=runtime.
+
+fan-state-list=<br>
+List of operating states for the fan (for example, Idle, RunningHigh, RunningLow).  All gateways should maintain a counter for each state, recording the duration in seconds that the system has been in that state since the last reset.  These times can be obtained by sending an hvac.request message with request=fantime.
+
+boost-duration=true|false<br>
+Optional item that is true if the hvac system allows a duration to be specified for the boost timer-mode.  If missing or false, the default boost period will be used instead.
+
+room=room name<br>
+Optional item providing a user-friendly name for the room where the zone is located.
+
+floor=floor name<br>
+Optional item providing a user-friendly name for the floor of the building where the zone is located.
+
+comment=comments<br>
+Optional item providing additional comments about the zone.
+
+====hvac.runtime====
+
+ hvac.runtime
+ {
+ zone=id
+ state=
+ time=#
+ }
+
+This schema reports the length of time that the zone has been in the specified hvac state.  It is sent as an xPL status message in response to an hvac.request with request=runtime.  The count can be reset to zero by sending an hvac.basic message with command=reset-runtime.
+
+zone=id<br>
+Name of the zone to which this message relates.
+
+state=<br>
+The state of the hvac system that we are interested in.  The state will be one of those returned in the hvac-state-list element of the zone's hvac.zoneinfo message.
+
+time=#<br>
+The length of time in seconds since the last reset that the zone has been in the specified state.
+
+====hvac.fantime====
+
+ hvac.fantime
+ {
+ zone=id
+ state=
+ time=#
+ }
+
+This schema reports the length of time that the zone has been in the specified fan state.  It is sent as an xPL status message in response to an hvac.request with request=fantime.  The count can be reset to zero by sending an hvac.basic message with command=reset-fantime.
+
+zone=id<br>
+Name of the zone to which this message relates.
+
+state=<br>
+The state of the fan that we are interested in.  The state will be one of those returned in the fan-state-list element of the zone's hvac.zoneinfo message.
+
+time=#<br>
+The length of time in seconds since the last reset that the zone has been in the specified state.
+
+===Status/Trigger Messages=== 
+The following messages are sent as triggers in response to changes in the state of the gateway or a zone, and as status messages when sent in response to an hvac.request message.
+
+====hvac.gateway====
+Sent whenever a gateway has an update that clients should be aware of. 
+
+ hvac.gateway
+ {
+ event=ready|changed
+ }
+
+'''event=ready'''<br>
+Sent out as soon as the gateway has completed any initialization and is ready to fields requests as well as send out updates. This should only be sent out once, though a client should allow it at anytime and not be negatively affected.  It is primarily meant to allow hvac clients to "discover" a new gateway automatically (such clients could also broadcast a request for gateway info via hvac.request and track the responders). 
+
+'''event=changed'''<br>
+Sent when the gateway wants clients to know the configuration of the gateway has changed. This could the result of a zone being added or removed.  This would normally indicate to a client that it should run a new discovery process on the gateway to pickup on changes.
+
+====hvac.zone====
+
+ hvac.zone
+ {
+ zone=id
+ hvac-mode=
+ fan-mode=
+ timer-mode=
+ hvac-state=
+ fan-state=
+ temperature=#
+ }
+
+This schema reports the current state of a zone.  It is sent as an xPL status message if requested by an hvac.request with request=zone, or as a trigger message when any of the zone's states changes.
+
+zone=id<br>
+Name of the zone to which this message relates.
+
+hvac-mode=<br>
+The current operating mode of the hvac system.  The hvac-mode will be one of those returned in the hvac-mode-list element of the zone's hvac.zoneinfo message.
+
+fan-mode=<br>
+The current operating mode of the fan.  The fan-mode will be one of those returned in the fan-mode-list element of the zone's hvac.zoneinfo message.
+
+timer-mode=<br>
+The current operating mode of the timer.  The timer-mode will be one of those returned in the timer-mode-list element of the zone's hvac.zoneinfo message.
+
+hvac-state=<br>
+The current state of the hvac system.  The hvac-state will be one of those returned in the hvac-state-list element of the zone's hvac.zoneinfo message.
+
+fan-state=<br>
+The current state of the fan.  The fan-state will be one of those returned in the fan-state-list element of the zone's hvac.zoneinfo message.
+
+temperature=#<br>
+The current temperature of the zone in Celsius.
+
+====hvac.setpoint====
+
+ hvac.setpoint
+ {
+ zone=id
+ setpoint=name
+ temperature=#
+ }
+
+This schema reports the current temperature of a setpoint.  It is sent as an xPL status message if requested by an hvac.request with request=setpoint, or as a trigger message when the setpoint temperature is changed.
+
+The setpoint will be one of those returned in the setpoint-list element of the zone's hvac.zoneinfo message.  The temperature will be provided in Celsius.
+Â 
+====hvac.timer====
+
+ hvac.timer
+ {
+ zone=id
+ timer=[SuMoTuWeThFrSa,hh:mm-hh:mm,hh:mm-hh:mm,...etc]
+ [timer=]
+ }
+
+This schema reports the current timer settings.  It is sent as an xPL status message if requested by an hvac.request with request=timer, or as a trigger message when a timer value is changed.
+
+The timer elements define the days and times on which the hvac system will be active.Â  There can be more than one timer= element in the message.Â  This allows different time periods to be set for different days of the week (for example, additional heating at weekends, when the house may be occupied for a greater portion of the day).Â  The timer values provided in this message replace any previous timer settings, so the message contains all the timer information for the zone.
+
+The format of the timer value consists of a list of two-character codes for the days of the week (each code is simply the first two letters of the day) on which the timer will be active (with no delimiters), followed by a comma separated list of time periods.Â  Each time period is formed from a start time and end time separated by a hyphen, with each time in the form hh:mm using the 24 hour clock.
+
+For example, for timers defining a morning and evening period during the week, and a daytime period at weekends, the message could look something like this:
+
+ hvac.timer
+ {
+ zone=lounge
+ timer=MoTuWeThFr,06:30-09:00,17:00-22:30
+ timer=SaSu,08:00-23:00
+ }
+
+If no timers have been set, then the message will contain the zone and a single timer= entry with nothing to the right of the equals sign.
+

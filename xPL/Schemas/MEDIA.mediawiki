@@ -1,0 +1,617 @@
+==Media Schemas==
+This schema family aims to allow media-related devices, such as Home Theatre PCs (HTPCs), MP3 players, amplifiers, set-top-boxes etc to be controlled via a common set of xPL messages.  The goal is to make basic control as straightforward as possible, but with enough sophistication for the schema to be useable with as wide a range of devices as possible.
+
+==Terminology==
+
+===Media Item===
+This describes an item of audio or visual data, such as a music track, photo, movie or TV show.  The media does not have to be self-contained file residing on a PC hard drive â€“ it can equally represent a collection of files, such as would be found on a DVD, a stream of data (such as that produced by an Internet radio station), or a transmission received via a TV tuner or set-top-box.
+
+
+===Media Player===
+Devices are often capable of handling more than one media item type.  For example, many devices that plug into a TV and stream data from a remote PC can often play music, videos and display photos.  In the xPL media schema family, the player is used to represent a division of the playback capabilities of the device.  In the example above, an xPL connector application for the device could report three players â€“ one each for handling music, videos and photos.  
+
+Breaking down the device in this way allows multiple media players to be controlled independently and simultaneously where there is no conflict of resources.  For example, listening to music and viewing photos at the same time ought to be possible.  However, if the underlying hardware does not support such a division, then the application should report just a single media player, albeit one that is capable of playing all of its different media types.
+
+
+===Device===
+A device is a piece of hardware or a complete software application that is capable of taking media and presenting it to a listener or viewer, or recording it for later use.  It is not expected that a device will be able to play all the different kinds of media, but any xPL connector implementing the media schemas must report the media types and formats that are supported by each media player, using the media.mpinfo schema.  Examples of devices are hardware such as the Exstreamer, Slimp3 and  MediaMVP, or software such as MediaPortal and Windows XP Media Center Edition.
+
+
+==Discovery Process==
+
+An xPL client can query an xPL connector about the device and the capabilities it provides. Devices and Media Players can be queried for state at any time, but in general, at startup there is a preferred way that such a client should approach discovering what is out there. 
+
+NOTE: Its perfectly ok for a client to not ask for any info at all if it "knows" what players it wants to control. It's also entirely ok to send requests for info in any order and at any time while the connector is running. 
+
+The preferred means to fully interrogate an xPL connector is as follows: 
+#Send a request for device info/capabilities (media.request schema, request=devinfo).
+#Send a request for details on each media player, one at a time (media.request schema, request=mpinfo).
+#For each input available to a media player, request details of the available channels (media.request schema, request=mpinput).
+
+A few things to note: 
+*When an entire device starts up, it should send a media.devstate trigger message to announce its presence.  If it is just one of an existing deviceâ€™s media players that has become available, then an mpconfig trigger should be sent instead.  This does mean that a trigger may be sent by a previously unknown media player, and receiving applications should be aware of this possibility.
+*You should have only one request outstanding at a time. You do not want to flood the xPL network and since the underlying network protocol (UDP) has no error recovery, if you did send too many requests at once, some would likely get lost. 
+*When sending a request, you should ideally start a timer after sending and wait up to 5 seconds for the requested info. If you have not received the response in 5 seconds, send it again. Do this no more than 5 times, after which you should assume the connector is having problems and you should stop all further discovery activity. 
+*The devinfo request results in a list of media players being sent back. If you want to read each of the returned players, you should adhere to the last two points - send a request for only one player at a time, wait for a response with timeout/retrying as needed, parse the response and then move on to the next player. 
+
+These are suggestions only -- you can of course, come up with your own approaches. For more generic xPL "clients", the devinfo/mpinfo messages are the only reliable way to know what the valid identifiers are for each item. 
+
+
+==Schema Details==
+===Command Messages===
+====MEDIA.BASIC====
+
+ media.basic
+ {
+ command=play|stop|pause|record|forward|rewind|position|chapter|next|back|
+         channel|queue|clear|power|reboot|mute|volume|input|options
+ mp=id
+ [state=on|off]
+ [chapter=inc|dec|#]
+ [position=#|+#|-#]
+ [url=filename]
+ [url=...]
+ [source=]
+ [quality=]
+ [channel=]
+ [input=]
+ [speed=]
+ [playnow=true|false]
+ [playnext=true|false]
+ [level=inc|dec|#(0-100)
+ [random=on|off]
+ [repeat=on|off]
+ [filter-XXXX=]
+ [filter-YYYY=]
+ }
+
+This schema defines the basic commands that control the behaviour of a device and its media players.  Sending a command that results in the device or a media playerâ€™s state being changed will generate a trigger message in response. 
+
+Note: Only the command= element is found in all media.basic messages, and must come first.  The presence or absence of the other elements depends on the particular command being issued.
+
+Commands are broken down into three groups â€“ transport (play, stop, pause etc), media selection (adding items to the playlist, changing TV channel etc) and configuration (random, repeat, volume etc).
+
+====MEDIA.BASIC - Transport Commands====
+
+ media.basic
+ {
+ command=play|stop|pause|record|forward|rewind|position|chapter|next|back
+ mp=id
+ [chapter=inc|dec|#]
+ [position=#|+#|-#]
+ [url=filename]
+ [url=â€¦]
+ [quality=]
+ [input=]
+ [channel=]
+ [speed=]
+ }
+
+'''command=play'''<br>
+'''mp=id'''<br>
+Commences playback of the specified media player.  Where possible, playback should start from the current location in the media item, rather than from the beginning.  This is especially true if the item was paused.  If the player is already in a "playing" state, this should do nothing and be ignored.
+
+'''command=stop'''<br>
+'''mp=id'''<br>
+Stops playback of the current item on the specified media player.
+
+'''command=pause'''<br>
+'''mp=id'''<br>
+Pauses playback of the currently playing item on the specified media player.  If playback is already paused, this message should not cause an unpause to occur.  Toggled behaviour can get out of sync in xPL, because UDP messages are not guaranteed to arrive.  To unpause, a play command should be sent.
+
+'''command=record'''<br>
+'''mp=id'''<br>
+'''url=filename'''<br>
+'''url=â€¦'''<br>
+'''[quality=]'''<br>
+'''[input=]'''<br>
+'''[channel=]'''<br>
+Starts recording from the selected input on the specified media player.  Recording will continue until a stop command is received.
+
+url=filename<br>
+The url item specifies the name of the file in which to record the media.  The length of any one url= line is 128 characters, but the filename can be split over several lines if required (each starting url=).  
+
+quality=<br>
+Optional parameter to set the quality of the recording (bit rate, compression, format etc).  No standard list of qualities has been defined - the available quality levels are dependent on the media player, and the ids can be found in the quality-list item in the media playerâ€™s mpinfo message.
+
+input=<br>
+The input to record can be selected by a command=input media.basic messages, or it can be optionally provided here.  The Input must be one that was returned in the players mpinfo message.
+
+channel=<br>
+The channel to record from can be selected by a command=channel media.basic messages, or it can be optionally provided here.  The channel must be one that was returned in the selected inputâ€™s mpinput message.
+
+'''command=forward'''<br>
+'''mp=id'''<br>
+'''[speed=]'''<br>
+Fast-forwards through the current media item.  The optional speed is taken from the forward-speeds list in the playerâ€™s mpinfo message.  If no speed is specified the player should move to the next fastest available speed.  Stops when the end of the media is reached, or when a different transport command is received.
+
+'''command=rewind'''<br>
+'''mp=id'''<br>
+'''[speed=]'''<br>
+Rewinds through the current media item.  The optional speed is taken from the rewind-speeds list in the playerâ€™s mpinfo message.  If no speed is specified the player should move to the next fastest available speed.  Stops when the beginning of the media is reached, or when a different transport command is received.
+
+'''command=position'''<br>
+'''mp=id'''<br>
+'''[position=#|+#|-#]'''<br>
+Changes the current playback position within the media item.  The position is specified in seconds, either as an offset from the beginning of the media item, or relative to the current position by prefixing the amount by + or â€“ for forward and back respectively.
+
+'''command=chapter'''<br>
+'''mp=id'''<br>
+'''chapter=[inc|dec|#]'''<br>
+Changes the current chapter being played.  Inc and Dec move to the next or previous chapter respectively, otherwise an integer number should be provided.  If the current media item does not contain chapters, the message should be silently ignored.
+
+'''command=next'''<br>
+'''mp=id'''<br>
+Moves playback to the start of the next media item in the playlist, or next album track if playing music without a playlist.
+
+'''command=back'''<br>
+'''mp=id'''<br>
+Moves playback to the start of the previous media item in the playlist, or previous album track if playing music without a playlist.  If the position in the current media item is more than 1 second from the start, then the back command moves playback to the start of the current media item instead.
+
+====MEDIA.BASIC - Media Selection Commands====
+
+ media.basic
+ {
+ command=channel|queue|clear
+ mp=id
+ [url=filename]
+ [url=        ]
+ [source=]
+ [channel=inc|dec|id]
+ [playnow=true|false]
+ [playnext=true|false]
+ [filter-XXXX=]
+ [filter-YYYY=]
+ }
+
+'''command=channel'''<br>
+'''mp=id'''<br>
+'''channel=inc|dec|id'''<br>
+Changes the channel used by the media player.  Inc and Dec move to the next and previous channel in the inputâ€™s channel list respectively.  If a channel id is provided instead, it must be one of the ids returned by the playerâ€™s [[#MEDIA.MPINPUT|media.mpinput]] message.
+
+'''command=queue'''<br>
+'''mp=id'''<br>
+'''[url=filename]'''<br>
+'''[url=...]'''<br>
+'''[source=]'''<br>
+'''[playnow=true|false]'''<br>
+'''[playnext=true|false]'''<br>
+'''[filter-XXXX=]'''<br>
+'''[filter-YYYY=]'''<br>
+Adds a media item to the end of the specified media playerâ€™s playlist.  There are two ways to queue an item, by url or by source/genre/artist/album/track.  The first is used with shared folders and web servers etc, and the second is used with a database to queue all the items that pass the various filters (such as album and artist).
+
+url=filename<br>
+The url item provides the name of the media item to play.  The maximum length of any one url= line is 128 characters, but the filename can be split over several url= entries if necessary.  If the message also contains a source= element, then the url= takes precedence and the source= is ignored.
+
+source=<br>
+Source is an optional parameter that provides a database name or location to search for items to add to the queue.  If no source is provided, it is left to the device to use its default location.  
+
+The search can be narrowed by specifying a number of filters to apply.  The available filters are listed in the playerâ€™s mpinfo message.  Each filter name is prefixed with filter- (to avoid possible confusion with existing message elements) and added to the end of the message.  As an example, suppose the user wishes to queue all of their Aerosmith mp3s, on a media player that includes â€œartistâ€ and â€œformatâ€ in itâ€™s list of filters.  The message could look something like this:
+
+ media.basic
+ {
+ command=queue
+ mp=mp3Player
+ source=musicdatabase
+ playnow=true
+ filter-artist=Aerosmith
+ filter-format=mp3
+ }
+
+The filter values may also contain ? and * as wildcards.  ? represents a single character, and * a string of characters.  For example, to search for all artists whose name contains a 'b' as the second letter, the filter would become:
+
+:filter-artist=?b*
+
+Note that if the message also contains a url= element, then the url= takes precedence and the source= and filter items are ignored.
+
+playnow=true|false<br>
+Playnow is an optional parameter which when set to true, causes any existing playlist to be cleared and the specified media item to be played immediately.  If playnow is not included in the message, it is assumed to be false.
+
+playnext=true|false<br>
+Playnext is an optional parameter which when set to true, causes any the media item to be queued so that it is the next item to be played, after the current one finishes.  The rest of the playlist is unaffected.  If playnext is not included in the message, it is assumed to be false.  Note that unlike playnow, setting playnext=true does not cause playback to begin.
+
+filter-XXXX=<br>
+The use of the filter- elements is described in the section covering source=.
+
+'''command=clear'''<br>
+'''mp=id'''<br>
+Clears the playlist on the specified player.  Any currently playing item will be stopped.
+
+====MEDIA.BASIC - Configuration Commands====
+
+ media.basic
+ {
+ command=power|reboot|mute|volume|input|options
+ mp=[id]
+ [state=on|off]
+ [level=inc|dec|#(0-100)
+ [input=]
+ [random=on|off]
+ [repeat=on|off]
+ }
+
+'''command=power'''<br>
+'''mp=[id]'''<br>
+'''state=on|off'''<br>
+Used to turn the device on or off.  When turning on, this assumes that in standby-mode the device is able to process xPL traffic.  If a media player is specified on the mp= line, then this command applies to an individual player, rather than the device as a whole.
+
+'''command=reboot'''<br>
+'''mp=[id]'''<br>
+Used to force a reboot of the device.  If a media player is specified on the mp= line, then this command applies to an individual player, rather than the device as a whole.
+
+'''command=mute'''<br>
+'''mp=[id]'''<br>
+'''state=on|off'''<br>
+Mutes or unmutes the sound from the device.  If a media player is specified on the mp= line, then this command applies to an individual player, rather than the device as a whole.
+
+'''command=volume'''<br>
+'''mp=[id]'''<br>
+'''level=#|+#|-#'''<br>
+Sets the volume of the device.  If a media player is specified on the mp= line, then this command applies to an individual player, rather than the device as a whole.  Volume levels range from 0 (silent) to 100 (maximum).  Volume may be set to a specific level, or increased or decreased in steps with by prefixing the level change with + or â€“ respectively.
+
+'''command=input'''<br>
+'''mp=id'''<br>
+'''input='''<br>
+Changes the input used by the specified player.  The input name must be a value returned by the playerâ€™s media.mpinfo message.
+
+'''command=options'''<br>
+'''mp=id'''<br>
+'''[random=on|off]'''<br>
+'''[repeat=on|off]'''<br>
+Used to set various playback options for the specified device.  Each parameter (apart from the device) is optional.  
+
+random=[on|off]<br>
+When random is on, items are played from the playlist in a random order.  No item should be repeated before the entire playlist has been played.  
+
+repeat=[on|off]<br>
+Setting repeat to on should make the media player start the playlist again once all items have been played.
+
+====MEDIA.REQUEST====
+
+This schema allows the sender to discover the capabilities and current status of a media device and its players. 
+
+ media.request
+ {
+ request=devinfo|devstate|mpinfo|mptrnspt|mpmedia|mpconfig|mpqueue
+ [mp=id]
+ [queue-index=#]
+ }
+
+Note: Only the request= element is found in all media.request messages, and must come first.  The presence or absence of the other elements depends on the particular request being made.
+
+'''request=devinfo'''<br>
+Requests the sending of a [[#MEDIA.DEVINFO|media.devinfo]] message containing details of the xPL connector software and a list of all the media players available in the device.
+
+'''request=devstate'''<br>
+Requests the sending of a [[#MEDIA.DEVSTATE|media.devstate]] message that describes the current state of the global device settings.  The requested message follows the same schema as that which is automatically sent when the device state changes, with the exception that the message type is xpl-stat rather than xpl-trig.
+
+'''request=mpinfo'''<br>
+'''mp=id'''<br>
+Requests the sending of a [[#MEDIA.MPINFO|media.mpinfo]] message describing the capabilities of the specified media player.
+
+'''request=mptrnspt'''<br>
+'''mp=id'''<br>
+Requests the sending of a [[#MEDIA.MPTRNSPT|media.mptrnspt]] message that describes the current transport state of the specified media player.   The requested message follows the same schema as that which is automatically sent when a media playerâ€™s transport state changes, with the exception that the message type is xpl-stat rather than xpl-trig.
+
+'''request=mpmedia'''<br>
+'''mp=id'''<br>
+'''[queue-index=#]'''<br>
+Requests the sending of a [[#MEDIA.MPMEDIA|media.mpmedia]] message describing the media item at the specified queue-index in the media playerâ€™s playlist or queue.  If the queue-index is zero or not included in the message, then a description of the currently playing item is sent instead.  The requested message follows the same schema as that which is automatically sent when a media playerâ€™s media item changes, with the exception that the message type is xpl-stat rather than xpl-trig.
+
+'''request=mpconfig'''<br>
+'''mp=id'''<br>
+Requests the sending of a [[#MEDIA.MPCONFIG|media.mpconfig]] message that describes the current configuration of the specified media player.   The requested message follows the same schema as that which is automatically sent when a media playerâ€™s configuration changes, with the exception that the message type is xpl-stat rather than xpl-trig.
+
+'''request=mpqueue'''<br>
+'''mp=id'''<br>
+Requests the sending of a [[#MEDIA.MPQUEUE|media.mpqueue]] message describing the media playerâ€™s queue or playlist.
+
+===Status Messages===
+These are sent in response to media.request messages.  Many of these status messages are also sent as triggers in response to other events.  For details, see the section on [[#Trigger Messages|Trigger Messages]].
+====MEDIA.DEVINFO====
+This message is sent in response to a [[#MEDIA.REQUEST|media.request]] message with request=devinfo.
+
+ media.devinfo
+ {
+ name=
+ version=
+ author=
+ info-url=
+ mp-list=id,id,â€¦,id
+ [mp-list=...]
+ }
+
+name=<br>
+A human readable name for the device.  Note that this is the name of the device being controlled, not the name of the xPL software.  It should be assumed that this name will be displayed to the user.
+
+version=<br>
+The version of the xPL software.  This should be a "raw" version number (that is, it should not be proceeded with a V or a Version or anything - V1.0 is NOT valid, 1.0 would be).  There is no structure otherwise imposed on this version as it should be informational only.
+
+author=<br>
+Name of the author (company or person) of the xPL software. 
+
+info-url=<br>
+URL of a website where more information about the software can be found. 
+
+mp-list=id,id,â€¦id<br>
+Media players are listed in any order, as a comma-separated list of ids with a maximum length of 128 characters.  Multiple mp-list= entries may be used in the message to get around this limit, although an individual id cannot be split across lines.  Applications should make no assumptions about the content of the ids â€“ they may be names or numbers or a combination.  Details of individual media players can be obtained by sending a request=mpinfo with the corresponding media player id.
+
+====MEDIA.DEVSTATE====
+Provides information on the global device state.
+
+ media.devstate
+ {
+ power=on|off
+ connected=true|false
+ [volume=#(0-100)]
+ [mute=on|off]
+ }
+
+power=on|off<br>
+Whether the device is powered on or off.
+
+connected=true|false<br>
+Indicates whether the media player is available.  This item will usually be true, but can be false when the schema is used in a trigger message sent when a player becomes unavailable, such as when an mp3 player is undocked.
+
+volume=#<br>
+Reports the current volume level as a value between 0 (silent) and 100 (maximum).
+
+mute=on|off<br>
+Whether the audio output from the device is muted or not.
+
+====MEDIA.MPINFO====
+Provides information about one of the deviceâ€™s media players. Returned in response to a [[#MEDIA.REQUEST|media.request]] message with request=mpinfo.
+
+ media.mpinfo
+ {
+ mp=id
+ name=
+ command-list=play,stop,pause,record,input,queue etc
+ [command-list=]
+ format-list=mp3,mp4,h.264,divx,wma, etc
+ [format-list=]
+ [quality-list=128,160,192 etc]
+ [quality-list=]
+ input-list=id,id,â€¦,id
+ [input-list=]
+ filter-list=genre,artist,album,channel,day etc
+ [filter-list=]
+ forward-speeds=1x,2x,4x,fwd1,fwd2 etc
+ rewind-speeds=1x,2x,4x,rew1,rew2 etc
+ audio=true|false
+ video=true|false
+ playlist=true|false
+ random=true|false
+ repeat=true|false
+ }
+ 
+mp=id<br>
+The id of the media player that this message relates to.
+
+name=<br>
+A descriptive name for the media player.  It should be assumed that this name will be displayed to the user.
+
+command-list=<br>
+A list of all the commands that are valid for use in media.basic messages with this media player.  The list should be comma-separated with no whitespace.  The maximum length of the list is 128 characters, but the message can contain multiple command-list= lines to avoid this limit.
+
+format-list=<br>
+A comma-separated list of the media formats that the player can handle.  The maximum length of the list is 128 characters, but the message can contain multiple format-list= lines to avoid this limit.
+
+quality-list=<br>
+Am optional comma-separated list of the quality levels the player can record at.  For example, an mp3 recorder might list bit rates of 128, 160, 192, 256 and 384.  If the player cannot record, or only has one quality setting, then the list should be omitted.  The maximum length of the list is 128 characters, but the message can contain multiple quality-list= lines to avoid this limit.
+
+input-list=<br>
+A list of the inputs (for example, tuner cards) available to this player.  The ids specified here are used in the [[#MEDIA.BASIC|media.basic]] command=input messages.
+
+filter-list=<br>
+A comma-separated list of the filters that can be applied when searching for media (see command=queue in [[#MEDIA.BASIC|media.basic]]).  Each filter name can be no more than 9 characters in length.  This is due to the name being prefixed with â€œfilter-â€œ and used as a message element in the [[#MEDIA.BASIC|media.basic]] schema (message element names have a maximum of 16 characters, with the filter- using up seven of those).  The maximum length of the filter-list line is 128 characters, but the message can contain multiple filter-list= lines to avoid this limit.
+
+forward-speeds=<br>
+A comma separated list of the available fast-forward settings, in order of increasing speed.
+
+rewind-speeds=<br>
+A comma separated list of the available rewind settings, in order of increasing speed.
+
+audio=true|false<br>
+Indicates whether the player uses the deviceâ€™s audio features.  This should also be set to true if the use of this player prevents other audio players from operating.
+
+video=true|false<br>
+Indicates whether the player uses the deviceâ€™s video features.  This should also be set to true if the use of this player prevents other video players from operating.
+
+playlist=true|false<br>
+Indicates whether the player supports the queuing of media in a playlist.  If false, any request to play a media item will result in playback starting immediately.
+
+random=true|false<br>
+Indicates whether the player supports shuffling of a playlist into a random order for playback.  Only valid if playlist=true.
+
+repeat=true|false<br>
+Indicates whether the player supports automatically repeating a playlist or individual media item once playback has finished.
+
+====MEDIA.MPINPUT====
+Provides information about the individual inputs available to a media player. Returned in response to a [[#MEDIA.REQUEST|media.request]] message with request=mpinput.
+
+ media.mpinput
+ {
+ mp=id
+ input=
+ [channel-list=]
+ [channel-list=]
+ }
+
+mp=id<br>
+The id of the media player to which this message relates.
+
+input=<br>
+Name of the input to which this message relates.
+
+channel-list=<br>
+Optional comma separated list of channel names.  The list may not be more than 128 characters in length, but multiple channel-list lines may be contained in the message to avoid this limit.  Note that individual channels names cannot not be split across multiple lines.
+
+====MEDIA.MPTRNSPT====
+Provides the current transport status of a media player.
+
+ media.mptrnspt
+ {
+ mp=id
+ command=play|stop|pause|record|forward|rewind
+ [position=#]
+ [chapter=#]
+ }
+
+mp=id<br>
+The id of the media player that this message relates to.
+
+command=play|stop|pause|record|forward|rewind<br>
+The current transport state of the media player.
+
+position=#<br>
+The current position from the start of the media item in seconds.  Optional parameter.
+
+chapter=#<br>
+The current chapter in the media item being played.  Optional parameter.
+
+====MEDIA.MPMEDIA====
+Reports details of a media item.
+
+ media.mpmedia
+ {
+ mp=id
+ [queue-index=#]
+ [title=]
+ [album=name]
+ [artist=name]
+ [genre=name]
+ [format=mp3|mp4|wav|ogg|jpgâ€¦etc]
+ [duration=#]
+ [aspect-ratio=1.33|1.85|2.35|#.##]
+ [channel=id]
+ [recorded-on=yyyymmdd]
+ [recorded-at=hhmm]
+ [description=]
+ }
+
+mp=id<br>
+The id of the media player that this message relates to.
+
+queue-index=#<br>
+The one-based index into the playlist at which this media item can be found.
+
+title=<br>
+The title of the currently selected media.  This could be the name of a music track, TV program or movie for example.
+
+album=<br>
+Name of the collection to which the media item belongs.  This will usually be relevant only for music, but could also be used for the name of a series of movies (such as season of a TV show), or a franchise such as Bond).
+
+artist=<br>
+Most commonly reported for music files, but could conceivably be the star(s) of a movie.
+
+genre=<br>
+Genre to which the media item belongs.  There is no predetermined list of genres â€“ this should be left for the user to decide.
+
+format=<br>
+Format of the media item.  This should be one of the formats returned in the playerâ€™s media.mpinfo message.
+
+duration=<br>
+The length of the media item in seconds.  Optional parameter.
+
+aspect-ratio=<br>
+For visual media, this specifies the aspect ratio of the image as the width divided by the height .  For example, a standard television image with an aspect ratio of 4:3 would be described in this message as 1.33.
+
+channel=id<br>
+Name of the channel that the player is currently tuned to.  This could be a TV channel, or the name of a radio station for example.
+
+recorded-on=yyyymmdd<br>
+Date on which this media item was recorded.  The date should be that when the recording was started.
+
+recorded-at=hhmm<br>
+Time of day that the media item was recorded.  The time should be that when the recording was started.
+
+description=<br>
+Optional description for the media item.  This could be a plot summary or review, for example.  There is a 128 character limit on the description, but multiple description= fields may be included in the message to get around this.  Be aware that the length of the entire xPL message should not exceed 1500 characters.
+
+====MEDIA.MPCONFIG====
+Provides the state of a media playerâ€™s configuration settings.
+
+ media.mpconfig
+ {
+ mp=id
+ [input=id]
+ [random=on|off]
+ [repeat=on|off]
+ [power=on|off]
+ [connected=true|false]
+ [volume=#(0-100)]
+ [mute=on|off]
+ }
+
+mp=id<br>
+The id of the media player that this message relates to.
+
+input=id<br>
+The name of the currently selected input for this media player.
+
+random=on|off<br>
+Set to â€œonâ€ if items in the playlist are to be played in a random order.
+
+repeat=on|off<br>
+Set to â€œonâ€ if playback of the current playlist or media item will be repeated when it has finished.
+
+power=on|off<br>
+Whether the media player is powered on or off.  For the overall device setting, see [[#MEDIA.DEVSTATE|media.devstate]]
+
+connected=true|false<br>
+Indicates whether the media player is available.  This item will usually be true, but can be false when the schema is used in a trigger message sent when a player becomes unavailable, such as when an mp3 player is undocked.  For the overall device setting, see [[#MEDIA.DEVSTATE|media.devstate]]
+
+volume=#<br>
+Reports the current player-specific volume level as a value between 0 (silent) and 100 (maximum).  For the overall device setting, see [[#MEDIA.DEVSTATE|media.devstate]].
+
+mute=on|off<br>
+Whether the audio output from the media player is muted or not.  For the overall device setting, see [[#MEDIA.DEVSTATE|media.devstate]].
+
+====MEDIA.MPQUEUE====
+Provides basic information on the media playerâ€™s playlist or queue.
+
+ media.mpqueue
+ {
+ mp=id
+ queue-size=#
+ [current-index=#]
+ [added=#]
+ [removed=#]
+ }
+
+mp=id<br>
+The id of the media player that this message relates to.
+
+queue-size=#<br>
+The number of items in the playlist or queue.
+
+current=#<br>
+The index of the currently playing item.  If set to zero, or missing from the message, then there is no current media item to report.
+
+added=#<br>
+Only valid when the schema is being used in a trigger message, this element reports the index of any new media item added to the playlist.  If the new item was not added to the end of the list, then it may be assumed that the indices of all following items will have been incremented by one.
+
+removed=#<br>
+Only valid when the schema is being used in a trigger message, this element reports the index of any  media item removed from the playlist.  Clearly it will be too late to retrieve any details once this message is received, but it does enable other software to maintain a copy of the playlist.
+
+===Trigger Messages===
+Trigger messages are sent whenever the state of the device or one of its media players changes.
+====MEDIA.DEVSTATE (Trigger)====
+A [[#MEDIA.DEVSTATE|media.devstate]] message is sent when one of the global device states changes.  The full description of the [[#MEDIA.DEVSTATE|media.devstate]] schema can be found in the [[#Status Messages|Status Messages]] section.
+
+
+The following are sent in response to changes in a media playerâ€™s state.  To reduce the size of the messages, state changes are assigned to one of three groups â€“ transport, media and configuration, each with its own schema.  Note that all software should allow the user to disable the sending of [[#MEDIA.MPTRNSPT|media.mptrnspt]] messages on position changes, since these are likely to be sent once per second otherwise.
+
+====MEDIA.MPTRNSPT (Trigger)====
+A [[#MEDIA.MPTRNSPT|media.mptrnspt]] message is sent when the transport mode of a media player changes.  The full description of the [[#MEDIA.MPTRNSPT|media.mptrnspt]] schema can be found in the [[#Status Messages|Status Messages]] section.
+
+====MEDIA.MPMEDIA (Trigger)====
+A [[#MEDIA.MPMEDIA|media.mpmedia]] message is sent when the player starts a new media item.  The full description of the [[#MEDIA.MPMEDIA|media.mpmedia]] schema can be found in the [[#Status Messages|Status Messages]] section.
+
+====MEDIA.MPCONFIG (Trigger)====
+A [[#MEDIA.MPCONFIG|media.mpconfig]] message is sent when any of the playerâ€™s configuration settings are changed.  The trigger is also sent when a player becomes available, or unavailable.  The full description of the [[#MEDIA.MPCONFIG|media.mpconfig]] schema can be found in the [[#Status Messages|Status Messages]] section.
+
+====MEDIA.MPQUEUE (Trigger)====
+A [[#MEDIA.MPQUEUE|media.mpqueue]] message is sent whenever the playerâ€™s queue or playlist has been modified.  The full description of the [[#MEDIA.MPQUEUE|media.mpqueue]] schema can be found in the [[#Status Messages|Status Messages]] section.  Note that major changes to the queue (such as clearing) should not result in a deluge of [[#MEDIA.MPQUEUE|media.mpqueue]] messages with individual add/remove items.  Instead these lines should be omitted and the receiving application can then rebuild its copy of the playlist from scratch.
+
