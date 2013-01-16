@@ -2,77 +2,77 @@ The following Message Schema have been ratified by The xPL Project:
 
 == xPL protocol core schemas ==
 
-*[[Schema - HBEAT|HBEAT.mediawiki]] Device heartbeat signalling
-*[[Schema - CONFIG|CONFIG.mediawiki]] Device configuration
+*[[xPL/Schemas/HBEAT.mediawiki| HBEAT]] Device heartbeat signalling
+*[[xPL/Schemas/CONFIG.mediawiki| CONFIG]] Device configuration
 
 == Home Control Family ==
 
-*[[Schema - HVAC|HVAC.mediawiki]] Interaction with HVAC related devices (thermostats etc)
-*[[Schema - LIGHTING|LIGHTING.mediawiki]] Control for any lighting system (X10, UPB, ZWave, CBus, etc)
-*[[Schema - MEDIA|MEDIA.mediawiki]] Control of media related devices (MP3/CD/DVD players, HTPC etc)
-*[[Schema - SECURITY|SECURITY.mediawiki]] Interaction with security related devices (alarm panels, motion sensors, smoke alarms etc)
+*[[xPL/Schemas/HVAC.mediawiki| HVAC]] Interaction with HVAC related devices (thermostats etc)
+*[[xPL/Schemas/LIGHTING.mediawiki| LIGHTING]] Control for any lighting system (X10, UPB, ZWave, CBus, etc)
+*[[xPL/Schemas/MEDIA.mediawiki| MEDIA] Control of media related devices (MP3/CD/DVD players, HTPC etc)
+*[[xPL/Schemas/SECURITY.mediawiki| SECURITY]] Interaction with security related devices (alarm panels, motion sensors, smoke alarms etc)
 
-*[[Schema - HOMEEASY.BASIC|HOMEEASY.BASIC.mediawiki]] Native control of Byron HomeEasy devices
-*[[Schema - X10.BASIC|X10.BASIC.mediawiki]] Native control of X10 devices.
-*[[Schema - X10.SECURITY|X10.SECURITY.mediawiki]] For X10 Security Devices.
-*[[Schema - ZWAVE.BASIC|ZWAVE.BASIC.mediawiki]] Native control of Z-Wave devices.
+*[[xPL/Schemas/HOMEEASY.BASIC.mediawiki| ]] Native control of Byron HomeEasy devices
+*[[xPL/Schemas/X10.BASIC.mediawiki| ]] Native control of X10 devices.
+*[[xPL/Schemas/X10.SECURITY.mediawiki| ]] For X10 Security Devices.
+*[[xPL/Schemas/ZWAVE.BASIC.mediawiki| ]] Native control of Z-Wave devices.
 
 == Caller ID Family ==
-*[[Schema - CID.BASIC|CID.BASIC.mediawiki]]
-*[[Schema - CID.METEOR|CID.METEOR.mediawiki]]
-*[[Schema - CID.NETCALL|CID.NETCALL.mediawiki]]
+*[[xPL/Schemas/CID.BASIC.mediawiki| ]]
+*[[xPL/Schemas/CID.METEOR.mediawiki| ]]
+*[[xPL/Schemas/CID.NETCALL.mediawiki| ]]
 
 == Audio Family ==
 The AUDIO.BASIC schema has been extended several times to accomodate various media players. TTS (Text to Speech) is included within the audio family, and allows various implementation of TTS engines to inject speech alerts into audio streams. 
 
-*[[Schema - AUDIO.BASIC|AUDIO.BASIC.mediawiki]]
-*[[Schema - AUDIO.WINAMP|AUDIO.WINAMP.mediawiki]]
-*[[Schema - AUDIO.SLIMSERV|AUDIO.SLIMSERV.mediawiki]]
-*[[Schema - AUDIO.RIO|AUDIO.RIO.mediawiki]]
-*[[Schema - TTS.BASIC|TTS.BASIC.mediawiki]]
+*[[xPL/Schemas/AUDIO.BASIC.mediawiki| ]]
+*[[xPL/Schemas/AUDIO.WINAMP.mediawiki| ]]
+*[[xPL/Schemas/AUDIO.SLIMSERV.mediawiki| ]]
+*[[xPL/Schemas/AUDIO.RIO.mediawiki| ]]
+*[[xPL/Schemas/TTS.BASIC.mediawiki| ]]
 
 == On Screen Display Family ==
-*[[Schema - OSD.BASIC|OSD.BASIC.mediawiki]]
-*[[Schema - OSD.TIVO|OSD.TIVO.mediawiki]]
+*[[xPL/Schemas/OSD.BASIC.mediawiki| ]]
+*[[xPL/Schemas/OSD.TIVO.mediawiki| ]]
 
 == Time of Day Family ==
-*[[Schema - DATETIME.BASIC|DATETIME.BASIC.mediawiki]]
-*[[Schema - DAWNDUSK.BASIC|DAWNDUSK.BASIC.mediawiki]]
-*[[Schema - TIMER|TIMER.BASIC.mediawiki]]
+*[[xPL/Schemas/DATETIME.BASIC.mediawiki| ]]
+*[[xPL/Schemas/DAWNDUSK.BASIC.mediawiki| ]]
+*[[xPL/Schemas/TIMER.BASIC.mediawiki| ]]
 
 == Database and Logging Family ==
-*[[Schema - DB.BASIC|DB.BASIC.mediawiki]]
-*[[Schema - DB.XQL|DB.XQL.mediawiki]]
-*[[Schema - LOG.BASIC|LOG.BASIC.mediawiki]]
+*[[xPL/Schemas/DB.BASIC.mediawiki| ]]
+*[[xPL/Schemas/DB.XQL.mediawiki| ]]
+*[[xPL/Schemas/LOG.BASIC.mediawiki| ]]
 
 == Remote Control Family ==
 These schema seek to present a unified way to represent IR Control data within the xPL environment.
 
-*[[Schema - REMOTE.BASIC|REMOTE.BASIC.mediawiki]]
-*[[Schema - IR.BASIC|IR.BASIC.mediawiki]] (Proposed)
+*[[xPL/Schemas/REMOTE.BASIC.mediawiki| ]]
+*[[xPL/Schemas/IR.BASIC.mediawiki| ]] (Proposed)
 
 == Digiguide TV Guide ==
 This early schema family is improperly formed, that is, a simple .basic type has not been defined. It will probably be redesigned to more accurately reflect the mor powerful inheritance based schema model, as well as being extended to support more sources of TV guide info.
 
-*[[Schema - DGUIDE.PLAYING|DGUIDE.PLAYING.mediawiki]]
-*[[Schema - DGUIDE.REMIND|DGUIDE.REMIND.mediawiki]]
-*[[Schema - DGUIDE.START|DGUIDE.START.mediawiki]]
-*[[Schema - DGUIDE.END|DGUIDE.END.mediawiki]]
+*[[xPL/Schemas/DGUIDE.PLAYING.mediawiki| ]]
+*[[xPL/Schemas/DGUIDE.REMIND.mediawiki| ]]
+*[[xPL/Schemas/DGUIDE.START.mediawiki| ]]
+*[[xPL/Schemas/DGUIDE.END.mediawiki| ]]
 
 == Send Message Family ==
 This family of schema will be extended over time to support different mechanisms, such as SMS, MEN Messenger etc. 
 
-*[[Schema - SENDMSG.BASIC|SENDMSG.BASIC.mediawiki]]
-*[[Schema - SENDMSG.SMTP|SENDMSG.SMTP.mediawiki]]
+*[[xPL/Schemas/SENDMSG.BASIC.mediawiki| ]]
+*[[xPL/Schemas/SENDMSG.SMTP.mediawiki| ]]
 
 == Telemetry Family ==
 One of the most powerful message schemas, Control and Sensor work together to allow a variety of simple devices (switches, temperature sensors, buttons, beam breaks etc) to be represented within an xPL environment. The simple rule of thumb for developers is - if the message is an xpl-trig sent by a device, it should probably use "sensor.basic", if it's a command that a device should carry out (ie, an xpl-cmnd message) then control.basic is more appropriate.
 
-*[[Schema - SENSOR.BASIC|SENSOR.BASIC.mediawiki]]
-*[[Schema - CONTROL.BASIC|CONTROL.BASIC.mediawiki]]
+*[[xPL/Schemas/SENSOR.BASIC.mediawiki| ]]
+*[[xPL/Schemas/CONTROL.BASIC.mediawiki| ]]
 
 == Misc Schemas ==
-*[[Schema - UPS.BASIC|UPS.BASIC.mediawiki]]
-*[[Schema - WEBCAM.BASIC|WEBCAM.BASIC.mediawiki]]
-*[[Schema - EXEC.BASIC|EXEC.BASIC.mediawiki]]
+*[[xPL/Schemas/UPS.BASIC.mediawiki| ]]
+*[[xPL/Schemas/WEBCAM.BASIC.mediawiki| ]]
+*[[xPL/Schemas/EXEC.BASIC.mediawiki| ]]
 
