@@ -21,7 +21,7 @@ The following Message Schema have been ratified by The xPL Project:
 *[[Schemas/CID.BASIC.mediawiki| CID.BASIC]]
 *[[Schemas/CID.METEOR.mediawiki| CID.METEOR ]]
 *[[Schemas/CID.NETCALL.mediawiki| CID.NETCALL ]]
-
+for i in `cat list`; do wget "http://xplproject.org.uk/wiki/index.php?title=Schema_-_$i&action=raw" -O $i.mediawiki; done"
 == Audio Family ==
 The AUDIO.BASIC schema has been extended several times to accomodate various media players. TTS (Text to Speech) is included within the audio family, and allows various implementation of TTS engines to inject speech alerts into audio streams. 
 
