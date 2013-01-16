@@ -1,0 +1,29 @@
+== About Vendor IDs ==
+
+One of the components of the xPL Message Header is the Vendor ID - this is a text field with a maximum size of eight characters which tells us which vendor built a given application or hardware item. The Vendor ID is used in a variety of ways - for example, it is used by xPLHal and the xPLHal Manager to download a plugin file with settings for the device.
+
+Vendor IDs are allocated in an informal way - a request should be posted at the [http://xplproject.org.uk/newvendor/index.php Request a Vendor ID] page. Support for the whole process is available through the forums. It's helpful to give us an idea of what you are going to do with the ID, however, we are not that picky if you want to keep your development under wraps until it's ready!
+
+A list of all vendors is available from [http://xplproject.org.uk/vendors.php http://xplproject.org.uk/vendors.php].
+
+The xPL project also maintains a masterlist of all plugins including their download locations. This list is used to allow software to automatically discover and download new plugins for a vendor. Applications can download the masterlist and from there get access to all individual vendor plugins. 
+
+The master list is located at [http://xplproject.org.uk/plugins.xml http://xplproject.org.uk/plugins.xml] (It also includes alternative download locations). Once a Vendor ID becomes active (see below) it will be added to the list.
+
+== Restrictions ==
+
+As part of the xPL Protocol Spec, the Vendor ID can't be any longer than eight ASCII characters - in practice, we also won't issue Vendor IDs that are shorter than three characters long. 
+
+Vendor IDs can only consist of lower case letters - no symbols, hyphens etc.
+
+== Active Vendor IDs ==
+
+A Vendor ID is considered Active if the vendor has:
+* released any xPL enabled applications or hardware 
+* provided an [[Sample_vendor_XML_File.mediawiki|XML Plugin file]] to describe their applications/hardware
+
+== Inactive Vendor IDs ==
+
+A Vendor ID is considered inactive if the vendor has either:
+* not released any xPL enabled applications or hardware
+* not provided an [[Sample_vendor_XML_File.mediawiki|XML Plugin file]] to describe their applications/hardware

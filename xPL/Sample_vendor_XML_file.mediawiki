@@ -1,0 +1,13 @@
+==What is an xPLHal Plug-in?==
+A plug-in is an XML file that describes the xPL devices released by a particular vendor. It is worth noting that plug-ins are unrelated to the xPL protocol itself - they are just a feature of the xPLHal product to enhance usability. Plug-in files are stored within the xPLHal Manager installation folder, in a directory called "plugins". They are loaded at startup by the manager, and are used in a variety of places within the user interface to enhance the end-user experience.
+
+A mechanism for updating plug-ins via the web is provided via the Help -> Update Plug-in Library menu option.
+
+Developers who wish to make their plug-in available via the web update mechanism should post their requests to {{UKHA_XPL}}. They should include their [[XPL_Vendors.mediawiki|Vendor ID]], and the URL to where their plug-in is hosted. Note that plug-in files must end with the file extension .xml, and must be hosted on an HTTP web server. We may be able to host plug-in files on behalf of developers if they do not have their own hosting facilities.
+
+==How do I write a plug-in?==
+The best way to begin writing a plug-in is to take a look at the plug-ins that are already available. This should give you a good understanding of the structure of a plug-in file.
+
+A reference plug-in is available at: http://xplproject.org.uk/downloads/vendor-plugin.xml
+
+This file demonstrates every possible feature of a plug-in, complete with full documentation.
