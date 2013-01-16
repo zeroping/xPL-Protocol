@@ -1,6 +1,6 @@
 == [[XPL Specification Document|The Core Protocol]] ==
 
-The key document produced by the xPL Project is the [[XPL Specification Document|xPL Protocol]], a detailed description of the xPL message structure, the maximum length of message elements etc.
+The key document produced by the xPL Project is the [[xPL_Core_Protocol.mediawiki|xPL Protocol]], a detailed description of the xPL message structure, the maximum length of message elements etc.
 
 This should be the first port of call for developers looking to port xPL to a new platform.
 
@@ -10,7 +10,7 @@ xPL uses well defined message schemas to ensure that applications from different
 
 This allows simple devices and applications to parse messages more easily.
 
-[[xPL Message Schema|All of the existing message schemas can be found here]]. Developers looking to create a new schema are invited to post their discussion on the [http://www.xpl-home.org/forums xPL forums] in the developers area.
+[[Schemas|All of the existing message schemas can be found here]]. Developers looking to create a new schema are invited to post their discussion on the [http://www.xpl-home.org/forums xPL forums] in the developers area.
 
 == XHCP - Enabling Smart Clients ==
 
