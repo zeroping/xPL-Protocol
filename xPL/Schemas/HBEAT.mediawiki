@@ -1,6 +1,6 @@
 == HBEAT Message Specification ==
 
-This schema provides the description of heartbeat message send by xPL devices on the xPL network. This schema is part of the core [[XPL Specification Document|../xPL Core Protocol.mediawiki]].
+This schema provides the description of heartbeat message send by xPL devices on the xPL network. This schema is part of the core [[../xPL Core Protocol.mediawiki|XPL Specification Document]].
 
 == XPL-STAT Structure ==
 If a device is configurable, but has not yet been configured, it should send heartbeats according to the [[Schema_-_CONFIG|config schema]].
