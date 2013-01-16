@@ -186,7 +186,7 @@ diagnosis of problems, and logging of events. The heartbeat interval is
 defined by the developer, and may be anything from five minutes to thirty
 minutes. There are two template heartbeat schemas currently defined.
 
-''Small Devices, such as PIC Systems''
+_Small Devices, such as PIC Systems_
 
 ```
 xpl-stat
@@ -202,7 +202,7 @@ interval=[interval in minutes]
 (...additional info defined by the developer)
 }
 ```
-''PC Based Applications, using Ethernet''
+_PC Based Applications, using Ethernet_
 ```
 xpl-stat
 {
@@ -878,5 +878,5 @@ clients. When xPL programs send messages, they broadcast them directly on to
 the network, the hub plays no role in sending whatsoever. xPL messages
 transmitted over Ethernet support a maximum size of 1,500 bytes.
 
-Detailed information about xPL hubs is available at the [xPL hubs
-specification](xPL_hubs_specification) page
+Detailed information about xPL hubs is available at the xPL hubs
+specification page
