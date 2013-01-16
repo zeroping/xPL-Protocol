@@ -1,6 +1,6 @@
-== [[XPL Specification Document|The Core Protocol]] ==
+== [[xPL/xPL_Core_Protocol.mediawiki|The Core Protocol]] ==
 
-The key document produced by the xPL Project is the [[xPL_Core_Protocol.mediawiki|xPL Protocol]], a detailed description of the xPL message structure, the maximum length of message elements etc.
+The key document produced by the xPL Project is the [[xPL/xPL_Core_Protocol.mediawiki|xPL Protocol]], a detailed description of the xPL message structure, the maximum length of message elements etc.
 
 This should be the first port of call for developers looking to port xPL to a new platform.
 
