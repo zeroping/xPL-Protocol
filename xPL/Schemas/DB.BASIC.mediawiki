@@ -1,0 +1,58 @@
+== DB.BASIC Message Specification ==
+
+*Class = DB
+*Type  = BASIC
+
+This Schema provides basic database lookup functionality to an xpl implementation
+
+== XPL-TRIG Structure ==
+
+Not applicable
+
+
+== XPL-CMND Structure ==
+
+ DB.BASIC
+ {
+ COMMAND=LOOKUP
+ SQL=<valid sql select string>
+ [TAG=<identification string]
+ }
+
+== XPL-STAT Structure ==
+
+ DB.BASIC
+ {
+ STATUS=OK
+ COMMAND=LOOKUP
+ <field 1 name>=<field 1 value>
+ ...
+ <field n name>=<field n value>
+ [TAG=<supplied id tag>]
+ }
+
+or
+
+ DB.BASIC
+ {
+ STATUS=FAIL
+ COMMAND=LOOKUP
+ [TAG=<supplied id tag>]
+ }
+
+and
+
+ HBEAT.*
+ {
+ (hbeat items)
+ }
+
+
+== Schema Specific Notes ==
+
+This is a basic schema to provide simple database lookup functionality
+Fieldnames may not exceed 16 characters, nor may they contain spaces
+The fixed COMMAND=LOOKUP name pair is for forward compatibility with more
+complex variants of the schema (see [[Schema - DB.XQL|DB.XQL]] Schema)
+
+== [[Standard Schema Notes]] ==

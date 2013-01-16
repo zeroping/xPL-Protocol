@@ -485,26 +485,26 @@ that can be controlled and addressed
 
   request=[gateinfo|netlist|netinfo|devlist|devinfo|devstate|scnlist|scninfo]
   [network=ID]
-  [[device=ID]|[scene=ID]][channel=#]
+  [ [device=ID]|[scene=ID] ][channel=#]
 
-request=gateinfo<br/>
+request=gateinfo
 Send back information in a lighting.gateinfo status message about this
 lighting gateway.
 
-request=netlist<br/>
+request=netlist
 Send back a list of known networks for this gateway via a lighting.netlist
 status message.
 
-request=netinfo<br/>
+request=netinfo
 Send information back about the specified (or default) network using the
 lighting.netinfo schema. If a request for information on an unknown
 network is made, the reply will contain only the network= and
 status=not-found.
 
-request=devlist<br/>
+request=devlist
 send a list of known device IDs using the lighting.devlist schema.
 
-request=devinfo<br/>
+request=devinfo
 sends all that we know about a given device using the lighting.devinfo
 schema. If a request for information on an unknown device is made, the
 reply will contain only the network=, device= and status=not-found.
@@ -512,7 +512,7 @@ reply will contain only the network=, device= and status=not-found.
 NOTE: devinfo describes the entire device and will not honor any channel=
 being passed in the request (all info for all channels is returned).
 
-request=devstate<br/>
+request=devstate
 send the current state of a channel on a device in a lighting.device
 schema message. If a request for information on an unknown device is
 made, the reply will contain only the network=, device= and
@@ -528,7 +528,7 @@ each channel.
 
 NOTE: If the device has no channels, you will not get a response back.
 
-request=scnlist<br/>
+request=scnlist
 send a list of known scene IDs via the lighting.scnlist schema.
 
 request=scninfo
@@ -536,17 +536,17 @@ sends all that we know about a given scene using the lighting.scninfo
 schema. If a request for information on an unknown scene is made, the
 reply will contain only the network=, scene= and status=not-found.
 
-network=ID<br/>
+network=ID
 is optional and if not supplied, defaults to the primary network. Most of
 the time, it is not needed.
 
-device=ID, scene=ID<br/>
+device=ID, scene=ID
 If asking for information on a device or scene, the appropriate identifier
 must be supplied. When asking for information not related to these three
 items, then none of them should appear. In any case, either one or or none
 of these will appear in a message -- never more than one.
 
-channel=#<br/>
+channel=#
 Optional. Used only for a devstate request, allows querying a specific
 channels state. If the channel= is omitted or passed as 0, then a separate
 device state report is sent back for each channel on the device.

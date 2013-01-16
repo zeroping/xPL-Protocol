@@ -1,0 +1,178 @@
+== AUDIO.SLIMSERV Message Specification ==
+
+*Class = AUDIO
+*Type  = SLIMSERV
+
+ NOTE: This schema is currently under development and has not been officially accepted by the xPL   project.
+ Discussion of this schema is welcomed in the xPL discussion group.
+
+This schema is an extension of the audio.basic schema to provide functionality specific to SlimServer devices
+a.k.a. [[Enable_xPL_support_in_SlimServer |SqueezeCenter]].
+
+The actual implementation allows to send the same controls as with the [http://wiki.slimdevices.com/index.php/CLI Command-Line Interface] (CLI).
+However, it doesn't provide answers to CLI queries.
+The only feedback is given by the status messages which are issued every time a track changes.
+
+== XPL-CMND Structure ==
+
+=== Basic Commands ===
+
+Basic commands can be in the form
+
+ AUDIO.BASIC
+ {
+ COMMAND=<basic command>[<parameter>]
+ }
+
+or
+
+ AUDIO.SLIMSERV
+ {
+ COMMAND=<basic command>[<parameter>]
+ }
+
+Basic commands are defined in the audio.basic schema:
+*PLAY = Start playback
+*STOP = Stop playback
+*VOLUME +<step 1 to 100> or <step 1 to 100>
+*VOLUME -<step 1 to 100> or <step 1 to 100>
+*VOLUME <level 1 to 100>
+*SKIP = Jump to next track in playlist
+*BACK = Jump to previous track in playlist
+*RANDOM = Shuffle the current playlist
+*CLEAR = Clear all songs from the current playlist
+
+=== Extended Commands ===
+
+Extended commands are in the form
+
+ AUDIO.SLIMSERV
+ {
+ COMMAND=<basic command>[<parameter>]
+ EXTENDED=<extended command>[(<repeat>)]
+ }
+
+Extended commands are in fact an interface to the SqueezeCenter's [http://wiki.slimdevices.com/index.php/CLI CLI commands].
+The following list gives an excerpt of the command list. Visit your SqueezeCenter's help for more information.
+
+Commands are case sensitive.
+Parameters marked with curly braces {} require escaping using the URL-syntax.
+
+==== Source selection ====
+
+The following source selection commands are aliases to somewhat lengthier CLI commands:
+
+*playfile <filename> = play the file specified in <filename>. The file name can be replaced by an URL to an internet radio station.
+*addfile <filename> = add the file <filename> to the playlist.
+
+The corresponding CLI command are ''playlist play <filename>'' and ''playlist add <filename>''.
+
+==== Pause, jump & power ====
+
+*pause = Toggle the paused state of the player
+*pause 1 = Force the player to pause
+*pause 0 = Force the player to unpause
+*time <number|-number|+number> = Jump to a particular position in a song by specifying a number of seconds to seek to. You may also jump to a relative position within a song by putting an explicit "-" or "+" character before the number of seconds you would like to seek.
+*power <0|1> = Turns the player on or off.
+*sleep <number> = The "sleep" command specifies a number of seconds to continue playing before powering off the player.
+
+==== Database ====
+
+* wipecache = Wipes the tag database and rescans the database
+*rescan = Rescans the database
+*rescan playlists = Rescans the playlists only.
+*abortscan = Aborts the scanning process.
+
+==== Playlist ====
+
+*playlist play {<item>} = Puts the specified song URL, playlist or directory contents into the current playlist and plays starting at the first item. Any songs previously in the playlist are discarded.
+Alternatively you may use the playfile <item> command, where the <item> does not need to be escaped.
+*playlist add {<item>} = Adds the specified song URL, playlist or directory contents to the end of the current playlist. Any songs currently playing or already on the playlist are not affected.
+Alternatively you may use the addfile command, where you do not need to escape the <item> parameter.
+*playlist insert {<item>} = Inserts the specified song URL, playlist or directory contents to be played immediately after the current song in the current playlist. Any songs currently playing or already on the playlist are not affected.
+*playlist move <fromindex> <toindex> = Moves the song at the specified index to a new index in the playlist. An offset of zero is the first song in the playlist. 
+*playlist delete <songindex> = Deletes the song at the specified index from the current playlist.
+*playlist resume {<playlist>} = Replace the current playlist with the playlist specified by <playlist>, starting at the song that was playing when the file was saved. (Resuming works only with M3U files saved with the playlist save command below.) Shortcut: use a bare playlist name (without leading directories or trailing .m3u suffix to load a playlist in the saved playlists folder.
+*playlist save {<playlist>} = Save a playlist file in the saved playlists directory. Accepts a playlist filename (without .m3u suffix) and saves in the top level of the playlists directory. Shortcut: use a bare playlist name (without leading directories or trailing .m3u suffix to load a playlist in the saved playlists folder.
+*playlist loadalbum {<genre>} {<artist>} {<album>} = Puts songs matching the specified genre artist and album criteria on the playlist. Any songs previously in the playlist are discarded.
+*playlist addalbum {<genre>} {<artist>} {<album>} = Appends all songs matching the specified criteria onto the end of the playlist. Any songs currently playing or already on the playlist are not affected.
+*playlist clear = Removes any song that is on the playlist. If a song is currently playing, it is stopped.
+This is the same as the command=clear function in an audio.basic message.
+*playlist index <index> = Sets the song that is currently playing by index. When setting, a zero-based value may be used to indicate which song to play. An explicitly positive or negative number may be used to jump to a song relative to the currently playing song.
+The audio.basic commands skip and back are equivalent to +1 and -1 respectively.
+*playlist shuffle <0|1> = Turns on or off shuffling of the playlist.
+The audio.basic command "random" can be used to enable shuffling of the playlist.
+*playlist repeat <0|1|2> = Used to indicate if the player will stop playing at the end of the *playlist, repeat the current song indefinitely, or repeat the current playlist indefinitely. A value of "0" indicates that the player will stop at the end of the playlist, "1" indicates that the player will repeat the current song indefinitely and a value of "2" indicates that the player will repeat the entire playlist indefinitely.
+
+=== Requests ===
+
+A status request
+
+ AUDIO.REQUEST
+ {
+ COMMAND=STATUS
+ }
+
+returns the last sent status message: status, artist, album, ...
+
+=== Configuration ===
+
+SqueezeCenter replies to the standard xPL configuration queries.
+
+Ask for the configuration items list:
+
+ CONFIG.LIST
+ {
+ COMMAND=REQUEST
+ }
+
+Ask for the current configuration values:
+
+ CONFIG.CURRENT
+ {
+ COMMAND=REQUEST
+ }
+
+and the answer comes:
+
+ CONFIG.CURRENT
+ {
+ NEWCONF=<player name>
+ INTERVAL=<interval>
+ INFRARED=none | buttons | raw | both
+ }
+
+== XPL-TRIG Structure ==
+
+ AUDIO.BASIC
+ {
+ COMMAND=<command / extended command>
+ }
+
+== XPL-STAT Structure ==
+The xPL-stat message is issued every time a track changes.
+ AUDIO.BASIC
+ {
+ STATUS=status information
+ POWER=power value
+ ARTIST=artist name
+ ALBUM=album name
+ TRACK=track name
+ }
+
+Status information:
+ STATUS=PLAYING | PAUSED | STOPPED
+
+Power value:
+ POWER=0 | 1
+
+
+There will be one heartbeat message per player:
+ HBEAT.APP
+ {
+ [standard hbeat items]
+ schema=audio.slimserv
+ status=status information
+ }
+
+== [[Standard Schema Notes]] ==

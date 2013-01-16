@@ -1,0 +1,32 @@
+== SENDMSG.BASIC Message Specification ==
+
+*Class = sendmsg
+*Type = basic
+
+This Schema provides a method of sending messages (e-mail, MSN, SMS etc) from an xPL Network. This schema is provided as a base, from which extensions to provide support for more complex systems can be added.
+
+== XPL-TRIG Structure ==
+
+ sendmsg.confirm
+ {
+ status=<Status info>
+ [error=<Error Message>]
+ }
+
+== XPL-CMND Structure ==
+
+ sendmsg.basic
+ {
+ body=<Message body>
+ to=<Email address, User ID or Phone Number>
+ }
+
+== XPL-STAT Structure ==
+
+ hbeat.*
+ {
+ (hbeat items)
+ }
+
+
+== [[Standard Schema Notes]] ==

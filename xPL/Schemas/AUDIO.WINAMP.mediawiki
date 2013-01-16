@@ -1,0 +1,87 @@
+== AUDIO.WINAMP Message Specification ==
+
+*Class = AUDIO
+*Type  = WINAMP
+
+This schema is an extension of the audio.basic schema to provide functionality specific to Winamp.
+
+== XPL-CMND Structure ==
+------------------
+
+ AUDIO.WINAMP
+ {
+ COMMAND=<basic command>[<parameter>]
+ EXTENDED=<extended command>[(<repeat>)]
+ }
+
+
+
+Basic Commands (as defined in the audio.basic schema):
+*PLAY
+*STOP
+*VOLUME +<step 1 to 100> or ><step 1 to 100>
+*VOLUME -<step 1 to 100> or <<step 1 to 100>
+*VOLUME <level 1 to 100>
+*SKIP
+*BACK
+*RANDOM
+*CLEAR
+
+Extended Commands:
+*ADDFILE <filename> = add the file <filename> to the playlist
+*BALANCE -127 to 127 = Sets the balance, 0 = centre
+*FADEOUT = Fade out and stop playback
+*FF5S = Fast forward 5 seconds
+*FR5S = Fast rewind 5 seconds
+*PAUSE = pause/unpause playback
+*PLAYFILE <filename> = play the file specified in <filename>
+*SEEK <position in seconds> = seek to the specified position within the current track
+*STOPAFTERTRACK = Stop playback after current track
+
+ AUDIO.REQUEST
+ {
+ COMMAND=STATUS
+ }
+ Returns last sent status message (see below)
+
+ CONFIG.RESPONSE
+ {
+ NEWCONF=<new instance>
+ [GROUP=<1st group>]
+ ...
+ [GROUP=<9th group>]
+ }
+
+== XPL-TRIG Structure ==
+------------------
+ AUDIO.BASIC
+ {
+ COMMAND=<command / extended command>
+ }
+ Commands:
+ None at this time.
+
+== XPL-STAT Structure ==
+------------------
+ AUDIO.BASIC
+ {
+ Status=<status>
+ [other relevant items]
+ }
+ 
+ Statuses:
+ PAUSED
+ PLAYING
+ STOPPED
+
+ HBEAT.APP
+ {
+ [standard hbeat items]
+ schema=audio.basic
+ [status items]
+ }
+
+== Schema Specific Notes ==
+---------------------
+
+== [[Standard Schema Notes]] ==

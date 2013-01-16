@@ -1,0 +1,57 @@
+== CID.METEOR Message Specification ==
+
+*Class = CID
+*Type  = METEOR
+
+This Schema provides Meteor Caller ID unit information to an xpl implementation
+
+This is an extension of the Base Schema, [[Schema - CID.BASIC|CID.BASIC]]
+
+
+
+== XPL-TRIG Structure ==
+
+ CID.METEOR
+ {
+ CallType=<INBOUND or OUTBOUND>
+ PHONE=<phone number>
+ CCS=INITIATED | COMPLETE | TERMINATED | CID | NOCID |ANSWERED | RING |DIGIT
+ RNN=WITHHELD | UNAVAILABLE
+ CLN=<CallingLineName>
+ CD=<Current Digit>
+ }
+
+
+== XPL-CMND Structure ==
+
+ Not Applicable to this schema
+
+
+
+== XPL-STAT Structure ==
+
+ HBEAT.*
+ {
+ (hbeat items)
+ }
+
+
+
+== Schema Specific Notes ==
+
+The CID.METEOR Schema is an extension of the [[Schema - CID.BASIC|CID.BASIC]] Schema
+
+Please be aware that devices/applications that filter on CID.* will receive multiple
+messages from this Schema variant
+
+*CCS (Current Call Status) values:
+*INITIATED = The phone has gone off hook
+*COMPLETE = the call has completed normally
+*TERMINATED = the call has been abnormally terminated
+*CID = caller ID information is being returned
+*NOCID = no caller ID information is being returned - examine the RNN (Reason for No Number) parameter to establish the cause
+*RING = Sent each time the phone rings
+*ANSWERED = An incoming call has been answered
+*DIGIT = a DTMF digit has been pressed - examine the CD (current digit) parameter to read the value of the digit that has been pressed.
+
+== [[Standard Schema Notes]] ==

@@ -1,0 +1,108 @@
+== sensor.basic Message Specification ==
+
+*Class = sensor
+*Type = basic
+
+This schema provides encapsulation of basic telemetry. This is the companion to control.basic, which can be used to set the value of these devices.
+
+In short, any input device, such as a switch, a temperature sensor, a light level sensor, should use the sensor.basic schema.
+
+== XPL-TRIG Structure ==
+
+ sensor.basic
+ {
+ device=<sensor name>
+ type=<sensor type>
+ current=<current value>
+ [lowest=<lowest recorded value>]
+ [highest=<highest recorded value>]
+ [units=<optional specifier for current units (inches, hours, volts, etc)>
+ }
+
+trigger messages are sent anytime the value of a sensor changes - e.g. due to a switch being pressed, or a change in temperature or light level.  They are meant to be asynchronous notifications of change and as such, they should be sent as soon as possible after the devices value actually changes.  trigger messages, like status messages, are always sent as broadcast messages (i.e. target=*)
+
+Do not send trigger messages in response to any received command (unless that command alters a value and is causing the trigger indirectly) or if there is no actual change in the value for a device (i.e. do not send them out periodically even if there value is the same as the last time).
+
+For analog inputs, the amount of change required to generate a trigger message is device-specific, and may be configurable by the end-user.
+
+lowest= and highest= are optional and only should be sent if the device has access to such information.
+
+units= is optional, but can clarify what unit of measure the "current=" value is in.
+
+== XPL-CMND Structure ==
+
+ sensor.request
+ {
+ request=current
+ [device=<sensor name>]
+ [type=<sensor type>]
+ }
+
+sensor.request allows you to query a device for information.  device= (and optionally type=) is used to select which device to report the status/value of.  request=current means you want the current value of the specified device (i.e. light swith state, current temperature, etc).
+
+When a device receives this message, it should immediatley send an xpl-stat message of the type sensor.basic with the current value in it (formatted as descirbed in the section on xpl-stat).
+
+In addition to the current value, devices may choose to allow additional information requests (for example, name of a sensor, location, min/max values, etc).  Such additional request options would be described in the devices documentation and would take the form of "request=<item>" (i.e. request=name or request=location).  The item name passed to the request= line should appear in the xpl-stat response message with a value.   For example, if you send a request with request=name, the resultant xpl-stat message should have device=<device id>, type=<type> and name=<device name>.  
+
+device= is required in virtually every instance.  The sole exception would be a device (xPL device name) that has only a single sensor and will never, ever have more than one.  Even then, it's best to allow a device=0 or device=1 or something to be consistant and prepare for the future (who knows -- the next rev of the device may support multiple devices).  If a request for current value is received and there is no device= (and assuming the receiving device requires it), the receiver should ignore/drop the response (it should NOT try to "figure out" what the sender really wanted -- too open to interpretation -- excplicity is where it's at).
+
+type= is optional and should rarely, if ever, be needed in a request for status.  The actual data to return is specified by request= and the specific device is via device=.  If you think you need this for this command, please think long and hard -- you almost certainly don't (it's more a historical curiosity now).  Regardless of whether a type= is passed or not, the resulting status message with the value will, like all status messages, include a type= appropriate to the device.
+
+Support for accepting sensor.request is optional and some smaller devices cannot do it.  But all device authors should make every effort they can to add support, at a minimum, for the request=current type.
+
+== XPL-STAT Structure ==
+
+ sensor.basic
+ {
+ device=<sensor name>
+ type=<sensor type>
+ current=<current value>
+ [lowest=<lowest recorded value>]
+ [highest=<highest recorded value>]
+ [units=<optional specifier for current units (inches, hours, volts, etc)>
+ [other device specific values, per the request= in sensor.request]
+ }
+
+Status messages are used to convey the state of values in a device and are generally sent in response to the device receiving a sensor.request command.  Status messages are always sent as broadcast messages (i.e. target=*).
+
+Each sensor.request command message will indicate what it is requesting.  In most cases, it will contain request=current, meanining it wants the current value for the device returned.  
+
+If some other attribute of the device, such as name, was asked for, then the response status message would contain that item and value.  For example, if the sensor.request command had request=name, then the xpl-stat message returned would have name=<the name> instead of the current=<current value> in its body..  If a sensor.request command is requesting information the device doesn't understand, the sensor.request command should be dropped and ignored (i.e. don't send anything out).  For example, if a temp sensor received a sensor.request command with request=air-pressure, it would likely just discard the request as it doesn't know what "air-pressure" is.
+
+For compatibility with the original xPL specification, it is permissable to send sensor.basic status message periodically without being requested by a sensor.request command message.  In general though, you should avoid this and send status messages only when requested.  Changes to values in the device should be transmitted via trigger (xpl-trig) messages.
+
+lowest= and highest= are optional and only should be sent if the device has access to such information. 
+
+units= is optional, but can clarify what unit of measure the "current=" value is in.
+
+== Known device types ==
+
+
+The following sensor types (via type=) are supported.  Most sensor types have a default unit of measure which is supplied in the description.  It is also possible to select other units of measure with a unit=.  Valid units of measure for each type is included with that type info.
+
+* battery - a battery level in percent.
+* count - a counter value (door openings, rain fall,  etc)
+* current - a current value in Amps.
+* direction - direction, represented as degrees from north (0-360, 0=north, 180=south, etc)
+* distance - distance measurments. Default unit of measure is meters. Units of measure can be explicitly defined (via units=) as "mm" (millimeters), "cm" (centimeters), "m" (meters), "km" (kilometers), "in" (inches), "ft" (feet), "mi" (miles).
+* energy - consumption of energy over a preiod of time in kWh (kilowatt hours)
+* fan - a fan speed in RPM
+* generic - a generic analogue value who's units of measurement are application specific
+* humidity - a relative humidity percentage (0 to 100, no percent sign)
+* input - a switch that can either be current=HIGH (on), current=LOW (off) or current=PULSE (representing a button press)
+* output - a change in an output state with values of LOW and HIGH
+* power - instantaneous energy consumption level in kW
+* pressure - a pressure value in Pascals (N/m<sup>2</sup>)
+* setpoint - a thermostat threshold temperature value in degrees.  Default unit of measure is centigrade/celsius.  Units of measure can be explicitly defined (via units=) as "c" for centigrade, "k" for Kelvin or "f" for farenheight.  The setpoint type was introduced to distinguish between a thermostat's desired (setpoint) and current (temp) temperatures.
+* speed - a generic speed.  Default unit of measure is Miles per Hour.  Units of measure can be explicitly defined (via units=) as "kph" (kilometers per hour), "mph" (miles per hour), "mps" (meters per second), "fps" (feet per second), "cps" (centimeters per second) and "ips" (inches per second).
+* temp - a temperature value in degrees.  Default unit of measure is centigrade/celsius.  Units of measure can be explicitly defined (via units=) as "c" for centigrade, "k" for Kelvin or "f" for farenheight.
+* uv - UV Index (with no units).  See http://en.wikipedia.org/wiki/UV_index
+* voltage - a voltage value in Volts.
+* volume - a volume in m<sup>3</sup>.  Often used as a measure of gas and water consumption.
+* weight - the default unit is kilograms (yes, kilograms are a unit of mass, not weight, but most users of the schema will not be pedants or in orbit).  Units can be explicity defined (via units=) as "g" (grams), "kg" (kilograms), "n" (newtons), "oz" (ounces) or "lb" (pounds).
+
+In addition, the control types supported by the control.basic schema may also be used by sensor.basic.
+
+== Standard Schema Notes ==
+
+Like all xPL devices, a device implementing the sensor schema must send periodic heartbeat messages (hbeat.app or hbeat.basic).  Those messages should not contain any values for sensors -- just the basic heartbeat information described elsewhere in the xPL spec.

@@ -1,0 +1,40 @@
+== SENDMSG.SMTP Message Specification ==
+
+*Class = SENDMSG
+*Type = SMTP
+
+This Schema extends the SENDMSG.BASIC Schema to provide the required fields to support sending messages through an SMTP Gateway from an xPL Network.
+
+A message from the xPL network causes a message to be sent through an SMTP Server, which can either be specified within the body of the message, or through a "settings" option within the App. The Gateway application will send a Trigger to reflect the status of the outbound message.
+
+== XPL-TRIG Structure ==
+
+ SENDMSG.CONFIRM
+ {
+ STATUS="Mail Sent" / "Mail Failed"
+ [ERROR=<Error Message>]
+ }
+
+== XPL-CMND Structure ==
+
+ SENDMSG.SMTP
+ {
+ BODY=<Message body>
+ TO=<Email address;multiple@address.allowed>
+ FROM=<Email Address of Sender>
+ SUBJECT=<Subject of Email>
+ [FRIENDLY=<Name of Sender>]
+ [CC=<Email Address of CC Recipients;seperate multiple with semicolon>]
+ [BCC=<Email Address of BCC Recipients;as above>]
+ [PRIORITY=<priority>]
+ [SERVER=<IP address of SMTP server>]
+ }
+
+== XPL-STAT Structure ==
+
+ HBEAT.*
+ {
+ (hbeat items)
+ } 
+
+== [[Standard Schema Notes]] ==

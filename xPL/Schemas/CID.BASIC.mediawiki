@@ -1,0 +1,37 @@
+== CID.BASIC Message Specification ==
+
+*Class = CID
+*Type  = BASIC
+
+
+This Schema provides basic Caller Id information to an xpl implementation
+
+
+== XPL-TRIG Structure ==
+
+ CID.BASIC
+ {
+ calltype=<INBOUND or OUTBOUND>
+ phone=<number called or calling, part number allowed>
+ }
+
+
+== XPL-CMND Structure ==
+
+ Not Applicable - no xpl-cmnd messages used within this schema
+
+
+== XPL-STAT Structure ==
+
+ HBEAT.*
+ {
+ (hbeat items)
+ }
+
+
+== Schema Specific Notes ==
+
+This is a very basic schema for caller id notification
+
+
+== [[Standard Schema Notes]] ==

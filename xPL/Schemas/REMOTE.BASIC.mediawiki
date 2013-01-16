@@ -1,0 +1,51 @@
+== REMOTE.BASIC Message Specification ==
+
+*Class = remote
+*Type  = basic
+
+This Schema provides a method of interacting with remote control devices within an xPL implementation.
+
+Note that this schema is not intended for transmission or reception of raw infra-red data - the ir.basic schema should be used for this purpose.  The remote.basic schema should be reserved for higher-level control, e.g. where actual keycode or button names are used.
+
+== XPL-TRIG Structure ==
+
+ remote.basic
+ {
+ keys=<button names or keycodes> - comma seperated values
+ [device=<name or devicecode of device>]
+ [zone=<ir zone>]
+ }
+
+== XPL-CMND Structure ==
+
+ remote.basic
+ {
+ keys=<button names or keycodes> - comma seperated values
+ [device=<name or devicecode of device to control>]
+ [zone=<ir zone>] 
+ [delay=<wait inbetween sending each button, 1000 = 1 second>]
+ }
+
+
+== XPL-STAT Structure ==
+
+ hbeat.*
+ {
+ (hbeat items)
+ }
+
+
+== Schema Specific Notes ==
+
+Device / applications based on this schema may implement either:
+xpl-trig
+xpl-cmnd
+or both
+
+If sending an xpl-trig in response to an incoming xpl-cmnd, ensure that the schema type used is remote.confirm rather than remote.basic. This allows another xPL device to Differentiate between genuine incoming trigger messages, and trigger messages sent in response to a command message.
+
+The value of zone= needs to be matchable within the device/application
+Use either a user-defined zone setting, 
+or (preferably) the device/application Instance
+
+== [[Standard Schema Notes]] ==

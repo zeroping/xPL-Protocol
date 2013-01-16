@@ -1,0 +1,49 @@
+== LOG.BASIC Message Specification ==
+
+*Class = LOG
+*Type  = BASIC
+
+This schema provides the ability for a device to transmit information relating to it's operation.
+
+== XPL-CMND Structure ==
+
+Not applicable.
+
+== XPL-TRIG Structure ==
+
+ log.basic
+ {
+ type=inf | wrn | err
+ text=<text to be logged>
+ [code=<event-specific code>]
+ }
+
+== XPL-STAT Structure ==
+
+Not applicable.
+
+
+== Schema Specific Notes ==
+---------------------
+
+This schema should be used when a device wishes to transmit information relating to it's operation.
+Messages using the log.basic schema can be monitored centrally and optionally logged
+to a database to provide a complete operational activity log of an entire xPL network.
+
+The type element should be used to broadly specify the type of information, and can be one of the following values:
+inf - The message is for informational purposes only.
+wrn - A warning message to indicate possible problems with a device that may require the attention of the user.
+err - An error has occurred, causing a device to fail or become partially inoperative.
+
+The text element should be used to specify the information that is being logged.
+Device vendors should take note of the 128-character limit that applies to any value within a name/value pair.
+
+The code element can be used to specify a numeric representation of the event.
+Vendors are free to define their own event codes that are specific to their devices.
+A complete listing of all possible event messages (and their associated event codes, if implemented)
+should be included as part of the documentation that accompanies any xPL-enabled device making use of the log.basic schema.
+
+Devices should not generate excessive log.basic messages, particularly of an informational variety, as this
+could lead to congestion of the xPL network.
+
+== [[Standard Schema Notes]] ==

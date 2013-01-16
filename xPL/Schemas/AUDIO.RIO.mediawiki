@@ -1,0 +1,154 @@
+== AUDIO.RIO Message Specification ==
+
+*Class = AUDIO
+*Type  = RIO
+
+This Schema is an extension of the AUDIO.BASIC Schema, providing extended control of Rio Receivers running an xPL modified version of RioPlay
+
+The Rioplay Software is Copyright (C) 2002 David Flowerday
+
+The Rioplay xPL Home Automation protocol modifications
+are Copyright (C) 2003 Tony Tofts
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+version 2 as published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+
+== XPL-CMND Structure ==
+
+ AUDIO.RIO
+ {
+ COMMAND=<basic command>[<parameter>]
+ ...
+ EXTENDED=<extended command>[(<repeat>)]
+ }
+
+NOTE: Maximum of 20 Commands, either basic or extended.
+
+Basic Commands:
+*PLAY
+*STOP
+*VOLUME +<step> or ><step>
+*VOLUME -<step> or <<step>
+*VOLUME <level 1 to 100>
+*SKIP
+*BACK
+*RANDOM
+*CLEAR
+
+Extended Commands:
+*POWER ON
+*POWER OFF
+*LIGHT ON
+*LIGHT OFF
+*SHOUTCAST <stream name>
+*SHOUTCAST xpl <stream url>
+*ALBUM <album title>
+*ARTIST <artist name>
+*TRACK <track title>
+*GENRE <genre type>
+*PLAYLIST <playlist name>
+*ANNOUNCE <voice\><text>
+*ANNOUNCEVOLUME <level 1 to 100>
+
+ AUDIO.REQUEST
+ {
+ COMMAND=STATUS
+ }
+
+Returns last sent status message (see below)
+
+ CONFIG.RESPONSE
+ {
+ NEWCONF=<new instance>
+ [GROUP=<1st group>]
+ ...
+ [GROUP=<9th group>]
+ }
+
+
+== XPL-TRIG Structure ==
+
+ AUDIO.BASIC
+ {
+ COMMAND=<command / extended command>
+ }
+
+Commands:
+*PLAY
+*STOP
+*SKIP
+*BACK
+*RANDOM
+*CLEAR
+*POWER ON
+*POWER OFF
+
+Note: these triggers also occur if using front panel buttons or remote
+
+== XPL-STAT Structure ==
+
+ AUDIO.BASIC
+ {
+ Status=<status>
+ <other relevant items>
+ }
+ 
+Statuses:
+
+ STATUS=POWER OFF
+
+ STATUS=POWER ON
+
+ STATUS=STOPPED
+
+ STATUS=PLAYING
+ TYPE=SHOUTCAST
+ STATION=<stream name>
+
+ STATUS=PLAYING
+ TYPE=<type e.g. MP3>
+ ARTIST=<artist name>
+ ALBUM=<album title>
+ TRACK=<track name>
+
+ STATUS=NEXT
+ TYPE=<type e.g. MP3>
+ ARTIST=<artist name>
+ ALBUM=<album title>
+ TRACK=<track name>
+
+ HBEAT.BASIC
+ {
+ INTERVAL=5
+ }
+
+
+== Schema Specific Notes ==
+
+The xPL modifications work within the confinements of the Rioplay software
+
+The initial heartbeat is hbeat.basic rather than config.basic as the xPL system
+will reconfigure itself to a default instance of "unitppp"
+where ppp = last 3 digits of ip address (or p or pp)
+
+The hostname and current vendor-source.instance and server address:port
+have been added to the Rioplay 'about' menu for ease of use
+
+The Rioplay xPL modifications ONLY accept TARGETTED messages
+
+The ANNOUNCE command takes a parameter like
+Microsoft Mary\Hello World
+The first part is the voice, and is optional
+A partial voice name can also be supplied like Mary\Hello
+The text should be in WAV format and can be served either from pre-recorded texts from a web server or on the fly using xpl_riotts application.
+
+The Rio will also respond to targetted TTS.BASIC messages, and with amendment to the filters it will also respond to broadcast TTS.BASIC messages
+
+== [[Standard Schema Notes]] ==

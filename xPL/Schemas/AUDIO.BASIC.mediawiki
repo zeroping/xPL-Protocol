@@ -1,0 +1,90 @@
+== AUDIO.BASIC Message Specification ==
+
+*Class = AUDIO
+*Type  = BASIC
+
+This Schema provides a simple method of interacting with Generic Audio playback Devices.
+
+
+
+== XPL-CMND Structure ==
+
+ audio.basic
+ {
+ command=<basic command>[<parameter>]
+ [extended=<extended command>[(<repeat>)]]
+ }
+
+Where Basic Commands are:
+*play
+*stop
+*volume +<step> or ><step>
+*volume -<step> or <<step>
+*volume <level 1 to 100>
+*skip
+*back
+*random
+*clear
+
+
+ audio.request
+ {
+ command=status
+ }
+ Returns last sent status message (see below)
+
+== XPL-TRIG Structure ==
+
+ audio.basic
+ {
+ command=<command>
+ }
+
+
+
+== XPL-STAT Structure ==
+
+ audio.basic
+ {
+ status=<status>
+ <other relevant items>
+ }
+
+Valid Status:
+
+ status=stopped
+
+ status=playing
+  type=shoutcast
+  station=<stream name>
+
+ status=playing
+  type=<type e.g. mp3>
+  artist=<artist name>
+  album=<album title>
+  track=<track name>
+
+ status=next
+  type=<type e.g. mp3>
+  artist=<artist name>
+  album=<album title>
+  track=<track name>
+
+ hbeat.basic
+ {
+ interval=5
+ }
+
+
+
+== Schema Specific Notes ==
+
+This Schema defines two name value pairs, command and extended.
+
+All devices using the simple audio.basic Schema must be able to interpret the common commands,
+play, stop, volume (with the parameters listed above), skip, back, random, clear.
+
+Schemas which extend audio.basic to support more capable audio playback devices should use the "command=" tag to indicate a basic command, and "extended=" to indicate the extended commands for that device.
+
+
+== [[Standard Schema Notes]] ==

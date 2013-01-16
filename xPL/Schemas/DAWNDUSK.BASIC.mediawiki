@@ -1,0 +1,41 @@
+== DAWNDUSK.BASIC Message Specification ==
+
+* Class = DAWNDUSK
+* Type  = BASIC
+
+This Schema provides dawn/dusk/day/night information to an xpl implementation
+
+== XPL-TRIG Structure ==
+
+ dawndusk.basic
+ {
+ type=dawndusk
+ status=dawn|dusk
+ }
+
+This message is sent when the dawn/dusk event occurs
+
+== XPL-CMND Structure ==
+
+ dawndusk.request
+ {
+ command=status
+ query=daynight
+ }
+
+== XPL-STAT Structure ==
+ 
+ dawndusk.basic
+ {
+ type=daynight
+ status=day|night
+ }
+
+This message is sent if daynight is requested
+via dawndusk.request, where query=daynight
+
+== Schema Specific Notes ==
+
+None.
+
+== [[Standard Schema Notes]] ==

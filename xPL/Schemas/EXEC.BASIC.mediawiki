@@ -1,0 +1,46 @@
+== EXEC.BASIC Message Specification ==
+
+*Class = EXEC
+*Type  = BASIC
+
+This schema is based on the implementation made by xPL Monkey, presented here : http://www.xplmonkey.com/xplexec.html
+
+== XPL-CMND Structure ==
+
+ EXEC.BASIC
+ {
+ pid=[anything you like - this is just sent back unchanged in the status messages]
+ program=[executable filename, including extension, but without path]
+ arg=[optional command line argument]
+ arg=[next argument]
+ arg=[etc]
+ }
+
+== XPL-STAT Structure ==
+On successfull launch
+ EXEC.BASIC
+ {
+ pid=[same id as was sent in the original command]
+ program=[executable filename]
+ status=started
+ return=
+ }
+
+On error 
+ EXEC.BASIC
+ {
+ pid=[same id as was sent in the original command]
+ program=[executable filename]
+ status=failed
+ return=error message
+ }
+
+On program ending
+
+ EXEC.BASIC
+ {
+ pid=[same id as was sent in the original command]
+ program=[executable filename]
+ status=finished
+ return=[executable return code]
+ }

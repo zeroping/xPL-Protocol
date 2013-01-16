@@ -1,0 +1,62 @@
+== UPS.BASIC Message Specification ==
+
+*Class = UPS
+*Type  = BASIC
+
+This schema provides basic information relating to an Uninterruptable Power Supply (UPS).
+
+== XPL-TRIG Structure ==
+
+ ups.basic
+ {
+ status=mains|battery|unknown
+ event=<event name>
+ }
+
+== XPL-CMND Structure ==
+
+Not Applicable
+
+
+== XPL-STAT Structure == 
+
+ hbeat.*
+ {
+ (hbeat items)
+ status=mains|battery|unknown
+ }
+
+== Schema Specific Notes ==
+
+The STATUS element should contain either mains, battery or unknown, depending on the current state of the UPS.
+Because each ups.basic message must contain a status element, the unknown option has been provided for instances where an event has occurred, but the UPS software does not know at that moment whether the UPS is on mains or battery power.
+For example, when issuing a comms_lost event to indicate that the host has lost communications with the UPS,
+the host will not know if the UPS is operating on mains or battery, and will therefore send a status=unknown element.
+
+The event element may contain one of the following values.
+Items marked with a * must be supported by all ups.basic implementations.
+Other items may or may not be transmitted, depending on the facilities of the UPS hardware in question.
+
+*onmains - The UPS has begun operating on mains power*
+*onbattery - The UPS has begun operating on battery power*
+*battlow - The UPS battery is low
+*battfull - The UPS battery is fully charged
+*bti - Battery test initiated
+*btp - Battery Test Passed
+*btf - Battery Test Failed
+*comms_lost - The host has lost communication with the UPS
+*comms_ok - Communication with the UPS has been restored
+*input_freq_error - The input frequency is out of range
+*input_freq_ok - The input frequency has returned from an error condition.
+*input_voltage_high - The input voltage is too high
+*input_voltage_low - The input voltage is too low
+*input_voltage_ok - The input voltage is OK following a previously "too low" or "too high" state
+*output_voltage_high - The UPS output voltage is too high
+*output_voltage_low - THe UPS output voltage is too low
+*output_voltage_ok - The UPS output voltage has returned to normal following a "too high" or "too low" condition.
+*output_overload - The UPS output is in overload
+*output_ok - The UPS output has returned from overload
+*temp_high - The UPS temperature is too high
+*temp_ok - The UPS temperature has returned from an over-temperature condition
+
+== [[Standard Schema Notes]] ==

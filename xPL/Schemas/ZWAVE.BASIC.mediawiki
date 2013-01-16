@@ -1,0 +1,146 @@
+==Z-Wave Schemas==
+
+The Z-Wave schemas are used for native control of Z-Wave devices.  It would be preferable for applications to support the generic schemas (Lighting, HVAC, Security, Media) as well, but these require configuration by the user.  In cases where this is not possible, where the user prefers not to use the generic schemas, or where the user has not yet set them up, zwave.basic can act as a fallback.
+
+
+===ZWAVE.BASIC Command===
+
+ zwave.basic
+ {
+ command=on|off|level|mode|fan-mode|setpoint|info
+ node=#
+ [level=#]
+ [mode=]
+ [setpoint=]
+ [temperature=]
+ }
+
+'''command=on'''<br>
+'''node=#(0-255)'''<br>
+Turns on the device with the specified node ID number (between 0 and 255).  The device will usually return to the level before it was last turned off, although this behaviour depends on the device itself and cannot be guaranteed.
+
+'''command=off'''<br>
+'''node=#(0-255)'''<br>
+Turns off the device.  The device will usually remember its level, and will return to it if an "on" command is sent.  Note that this behaviour depends on the device itself and cannot be guaranteed.
+
+'''command=level'''<br>
+'''node=#(0-255)'''<br>
+'''level=#(0-100)'''<br>
+Sets the device to the specified level.  The level is an integer between 0 and 100. A level of 100 represents maximum brightness.  A level of 0 is treated the same as an "off" command, in that the previous level may be remembered for when an "on" command is sent.
+
+'''command=mode'''<br>
+'''node=#(0-255)'''<br>
+'''mode='''<br>
+For Z-Wave thermostats only.  Sets the thermostat mode of operation.  The available modes depend on the particular brand of thermostat.  A list of modes can be obtained by sending a command=info message.  The Z-Wave software should respond with a zwave.info message describing the device.
+
+'''command=fan-mode'''<br>
+'''node=#(0-255)'''<br>
+'''mode='''<br>
+For Z-Wave thermostats only.  Sets the mode of operation for a fan controlled by the Z-Wave thermostat.  The available fan modes depend on the particular brand of thermostat.  A list of fan modes can be obtained by sending a command=info message.  The Z-Wave software should respond with a zwave.info message describing the device.
+
+'''command=setpoint'''<br>
+'''node=#(0-255)'''<br>
+'''setpoint='''<br>
+'''temperature=#'''<br>
+For Z-Wave thermostats only.  Sets the temperature (in Celsius) of the specified setpoint.  The available setpoints depend on the particular brand of thermostat.  A list of setpoints can be obtained by sending a command=info message.  The Z-Wave software should respond with a zwave.info message describing the device.
+
+'''command=info'''<br>
+'''node=#(0-255)'''<br>
+Applications supporting the zwave.basic schema should respond to a command=info message by sending a zwave.info status message describing the specified device.
+
+===ZWAVE.BASIC Trigger===
+
+ zwave.basic
+ {
+ event=level|mode|fan-mode|setpoint|state|fan-state|temperature
+ node=# [level=#]
+ [mode=]
+ [setpoint=]
+ [temperature=#]
+ }
+
+'''event=level'''<br>
+'''node=#(0-255)'''<br>
+'''level=#(0-100)'''<br>
+Reports changes to the level of the device with the specified node ID (an integer between 0 and 255).  The level is an integer between 0 and 100, where 0 represents off, and 100 is fully on.  There is no command=on or command=off in zwave.basic trigger messages.  Off is represented by a command=goto with level=0, and On by a command=goto with a level equal to whatever level the device returned to when turned on.
+
+'''event=mode'''<br>
+'''node=#(0-255)'''<br>
+'''mode='''<br>
+Sent by Z-Wave thermostats only.  Reports a change to the thermostat mode.  The mode will be one of those returned in the thermostat's zwave.info message.
+
+'''event=fan-mode'''<br>
+'''node=#(0-255)'''<br>
+'''mode='''<br>
+Sent by Z-Wave thermostats only.  Reports a change to the thermostat fan mode.  The mode will be one of the fan modes returned in the thermostat's zwave.info message.
+
+'''event=setpoint'''<br>
+'''node=#(0-255)'''<br>
+'''setpoint='''<br>
+'''temperature=#'''<br>
+Sent by Z-Wave thermostats only.  Reports a change to the temperature defined for the specified setpoint.  The setpoint will be one of those returned in the thermostat's zwave.info message.  The temperature is provided in Celsius.
+
+'''event=state'''<br>
+'''node=#(0-255)'''<br>
+'''state='''<br>
+Sent by Z-Wave thermostats only.  Reports a change to the operating state of the thermostat.  The state will be one of those returned in the thermostat's zwave.info message.
+
+'''event=fan-state'''<br>
+'''node=#(0-255)'''<br>
+'''state='''<br>
+Sent by Z-Wave thermostats only.  Reports a change to the operating state of the fan.  The state will be one of the fan states returned in the thermostat's zwave.info message.
+
+'''event=temperature'''<br>
+'''node=#(0-255)'''<br>
+'''temperature=#'''<br>
+Sent by Z-Wave thermostats only.  Reports a change to the current temperature as measured by the thermostat.  The temperature is provided in Celsius.
+
+===ZWAVE.INFO Status===
+
+The zwave.info schema is used to supply information about an individual Z-Wave device.  It should be sent in response to a zwave.basic message with command=info.  A zwave.info is only ever sent as an xPL status message.
+
+ zwave.info
+ {
+ node=#
+ type=
+ commands=
+ modes=
+ fan-modes=
+ setpoints=
+ states=
+ fan-states=
+ }
+
+''node=#'''<br>
+Z-Wave node ID for this device.  An integer between 0 and 255.
+
+'''type='''<br>
+The device type.  Current types are<br>
+BinarySwitch<br>
+MultilevelSwitch<br>
+RemoteSwitch<br>
+RemoteSensor<br>
+RepeaterSlave<br>
+ToggleSwitch<br>
+WindowCovering<br>
+Thermostat<br>
+Controller<br>
+StaticController<br>
+
+'''commands=on,off,level,mode,fan-mode,setpoint,info'''<br>
+A comma separated list of commands to which this device can respond, and that can be used in zwave.basic messages.
+
+'''modes='''
+For Z-Wave thermostats only.  A comma separated list of thermostat modes that may be used with zwave.basic command=mode messages.
+
+'''fan-modes='''
+For Z-Wave thermostats only.  A comma separated list of thermostat fan modes that may be used with zwave.basic command=fan-mode messages.
+
+'''setpoints='''
+For Z-Wave thermostats only.  A comma separated list of the thermostat setpoints.  Each setpoint may be changed by sending zwave.basic message with command=setpoint.
+
+'''states='''
+For Z-Wave thermostats only.  A comma separated list of operating states that the thermostat may be in.  These current state is reported in zwave.basic trigger messages with event=state.
+
+'''fan-states='''
+For Z-Wave thermostats only.  A comma separated list of operating states that the fan may be in.  The current fan state is reported in zwave.basic trigger messages with event=fan-state.

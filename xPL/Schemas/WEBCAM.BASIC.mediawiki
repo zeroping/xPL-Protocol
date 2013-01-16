@@ -1,0 +1,28 @@
+== WEBCAM.BASIC Message Specification ==
+
+*Class = WEBCAM
+*Type  = BASIC
+
+This Schema provides date & time information to an xpl implementation
+
+== XPL-CMND Structure ==
+
+ DATETIME.REQUEST
+ {
+ COMMAND=IMAGE
+ [URL=<url etc of image>
+ [FILE=<drive:path:filename for downloaded image]
+ }
+
+== XPL-STAT Structure ==
+
+ HBEAT.BASIC
+ {
+ (hbeat items)
+ }
+
+== Schema Specific Notes ==
+
+This is a very basic webcam schema, it will be expanded at a later date
+
+== [[Standard Schema Notes]] ==

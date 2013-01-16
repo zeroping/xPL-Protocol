@@ -1,0 +1,35 @@
+== CID.NETCALL Message Specification ==
+
+*Class = CID
+*Type  = NETCALL
+
+This Schema provides NetCallerID caller id information an xpl implementation
+
+This is an extension of the Base Schema, [[Schema - CID.BASIC|CID.BASIC]]
+
+== XPL-TRIG Structure ==
+
+ CID.NETCALL
+ {
+ calltype=<INBOUND or OUTBOUND>
+ phone=<number called or calling, part number or blank allowed>
+ cln=<Caller Name>
+ call-date=<Date/Time of the Call>
+ }
+
+Call-date is in the format "MMDDhhmm".
+
+== XPL-CMND Structure ==
+
+ Not Applicable to this schema
+
+== XPL-STAT Structure ==
+
+ HBEAT.*
+ {
+ (hbeat items)
+ }
+
+== Schema Specific Notes ==
+
+The CID.NETCALL Schema is an extension of the [[Schema - CID.BASIC|CID.BASIC]] Schema.

@@ -1,0 +1,69 @@
+== X10.SECURITY Message Specification ==
+
+The x10.security schema is used with X10 Security RF devices.  These devices are designed specifically for use with X10 security consoles, and do not transmit the usual 32-bit X10 RF format, using a special 41-bit format instead.  
+
+The messages do not contain house, unit and function codes, only a device id (a number between 0 and 255) and a command (again, a number between 0 and 255, although this can be mapped to a reduced set of command strings).
+
+X10 Security RF commands received by an xPL-enabled receiver should sent over the xPL network using xpl-trig messages.  The schema should only be used in xpl-cmnd mode when directly instructing an xPL-enabled transmitter to send X10 security RF commands.
+
+
+ x10.security
+ {
+ command=alert|normal|motion|light|dark|arm-home|arm-away|disarm|panic|lights-on|lights-off
+ device=<device id>
+ [type=sh624|kr10|ds10|ds90|ms10|ms20|ms90|dm10|sd90|...]
+ [tamper=true|false]
+ [low-battery=true|false]
+ [delay=min|max]
+ }
+
+'''command=alert|normal|motion|light|dark|arm-home|arm-away|disarm|panic|lights-on|lights-off'''<br>
+The raw command received from an X10 security device is a number between 0 and 255.  However, all the codes used can be mapped to the much smaller set of command strings that are specified here.
+
+command=alert<br>
+The security sensor has been triggered.
+
+command=normal<br>
+The cause of the alert state has been removed.
+
+command=motion<br>
+Movement has been detected.  X10 security devices do not send a message when movement has stopped - xPL apps responding to this message must manage their own time-out period after which they should assume that movement has stopped.
+
+command=light<br>
+Sent by motion detectors when the light level has risen above a preset threshold.
+
+command=dark<br>
+Sent by motion detectors when the light level has fallen below a preset threshold.
+
+command=arm-home<br>
+Sent by security remote controls to arm the system while the house is still occupied - at night, for example.  The usual method is to arm "perimeter" sensors such as door, window and glass-break detectors, while ignoring motion sensors.
+
+command=arm-away<br>
+Sent by security remote controls to arm the system while the house is unoccupied - for example, at night.  In this mode all sensors will be armed.
+
+command=disarm<br>
+Sent by security remote controls to disarm the system.
+
+command=panic<br>
+Sent by security remote controls to immediately trigger the alarm.
+
+command=lights-on<br>
+Sent by security remote controls to turn on a set of lights that are controlled by the alarm console.
+
+command=lights-off<br>
+Sent by security remote controls to turn off the set of lights that are controlled by the alarm console.
+
+'''device=<device id>'''<br>
+Unique identifier of the device sending the message.  The id is a number between 0 and 255.  It is also referred to as the device address.
+
+'''type=sh624|kr10|ds10|ds90|ms10|ms20|ms90|dm10|sd90|...'''<br>
+Optional item that identifies the type of X10 security device that is sending the message.  Most command codes can be mapped to one specific device type.  However, some codes are used by more than one device.  If one of these is received, the type element should contain a list of all the possible device types, separated with commas.
+
+'''tamper=true|false'''<br>
+Optional item that indicates whether the security device has been tampered with (usually triggered by opening the case).  If not present, the tamper state should be assumed to be false.
+
+'''low-battery=true|false'''<br>
+Optional item that indicates whether the security device needs to have its battery replaced.  If not present, the low-battery state should be assumed to be false.
+
+'''delay=min|max'''<br>
+Some sensors have a switch which changes their alert message so that the alarm console knows to allow a delay period before triggering the alarm.  If not present, the delay should be assumed to be "min".

@@ -1,0 +1,116 @@
+== DB.XQL Message Specification ==
+
+*Class = DB
+*Type  = XQL
+
+This Schema provides complex database functionality to an xpl implementation
+Base Schema is DB.BASIC
+
+== XPL-TRIG Structure ==
+
+Not applicable
+
+
+== XPL-CMND Structure ==
+
+ DB.XQL (or DB.BASIC, for LOOKUP)
+ {
+ COMMAND=<xql command, must support LOOKUP>
+ SQL=<valid sql select string>
+ [TAG=<identification string]
+ [SQLID=<predefined sql id>, see notes]
+ [HOW=<FIRST, LAST, PREVIOUS, NEXT>,  for MOVE or FIND]
+ [<field 1 name>=<field 1 value>, for ADD or EDIT]
+ ...
+ [<field n name>=<field n value>, for ADD or EDIT]
+ }
+
+
+== XPL-STAT Structure ==
+
+ DB.XQL (or DB.BASIC, for LOOKUP)
+ {
+ STATUS=OK
+ COMMAND=<requested xql command>
+ [<field 1 name>=<field 1 value>]
+ ...
+ [<field n name>=<field n value>]
+ [SQLID=<relevant sql id>]
+ [TAG=<supplied id tag>]
+ }
+
+or
+
+ DB.XQL (or DB.BASIC, for LOOKUP)
+ {
+ STATUS=FAIL
+ COMMAND=<requested xql command>
+ [SQLID=<relevant sql id>]
+ [TAG=<supplied id tag>]
+ }
+
+and
+
+ HBEAT.*
+ {
+ (hbeat items)
+ }
+
+
+== Schema Specific Notes ==
+
+This schema is deisgned to provide far greater functionality than DB.BASIC
+
+The SQLID= may be 1 thru 50 or left off for dynamic allocation
+The principle behind this is that a complex interaction can be more easily
+performed if a known sqlid is used (e.g. it may be useful for logging)
+
+Any unclosed SQL connection should be closed after a developer pre-defined
+length of time
+
+The support commands and their STATUS=OK responses are:
+
+*LOOKUP - Performs a simple lookup
+Returns first records contents
+
+*OPEN - opens a sql for further processing
+Returns first records contents
+
+*CLOSE - closes an open sql
+Requires SQLID
+Returns Nothing (either on success or failure)
+
+*COUNT - record count for an open sql (id > 50)
+Requires SQLID
+Returns Record Count
+
+*MOVE - moves record pointer (id > 50)
+Requires SQLID
+Requires HOW
+Returns current record contents
+
+*ADD - adds new record
+Requires SQLID
+Requires Fields/Values
+Returns STATUS=OK only
+
+*EDIT - edits current record
+Requires SQLID
+Requires Fields/Values
+Returns STATUS=OK only
+
+*FIND - finds a record (id > 50)
+Requires HOW
+Returns current record contents
+
+*DELETE - deletes current record (id > 50)
+Requires SQLID
+Returns STATUS=OK only
+
+ADD / EDIT / FIND also support a ONE-SHOT scenario
+If no SQLID ID is provided for these 3 commands then the following occurs:
+Open SQL
+Perform Action
+Close SQL
+
+== [[Standard Schema Notes]] ==

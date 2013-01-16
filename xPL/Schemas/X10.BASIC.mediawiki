@@ -1,0 +1,75 @@
+== X10.BASIC Message Specification ==
+
+*Class = X10
+*Type  = BASIC
+
+This Schema provides X10 command functionality to an xpl implementation
+
+== XPL-TRIG Structure ==
+
+ x10.basic
+ {
+ command=<x10 command>, see notes
+ Either,
+ device=<list of x10 devices, comma seperated>
+ or
+ house=<list of house codes e.g. AFG>
+ [level=<dim/bright level 0 to 100>]
+ [data1=<first byte of extended data 0 to 255>]
+ [data2=<second byte of extended data 0 to 255>]
+ }
+
+
+
+== XPL-CMND Structure ==
+
+ x10.basic
+ {
+ command=<x10 command>, see notes
+ Either,
+ device=<list of x10 devices, comma seperated>
+ or
+ house=<list of house codes e.g. AFG>
+ [level=<dim/bright level 0 to 100>]
+ [data1=<first byte of extended data 0 to 255>]
+ [data2=<second byte of extended data 0 to 255>]
+ }
+
+The command message, if successfully sent onto the powerline, should be echoed back as a trigger message using the schema X10.CONFIRM. The message format is the same as the X10.BASIC trigger message shown above, however the X10.CONFIRM message schema indicates that the trigger message is purely a response to a command, and not a genuine incoming X10 message from the powerline.
+
+
+== XPL-STAT Structure ==
+
+ hbeat.*
+ {
+ (hbeat items)
+ } 
+
+
+== Schema Specific Notes ==
+
+X10 command=
+*select
+*all_units_off
+*all_lights_on / all_lights_off
+*on / off
+*dim / bright
+*extended
+*hail_req
+*hail_ack
+*predim1
+*predim2
+*status
+*status_on
+*status_off
+
+Note that hail_ack, status_on and status_off cannot be sent as commands, but may appear as commands in an incoming xpl-trig message.
+
+Any device/application implementing this schema MUST echo back each xpl-cmnd as an xpl-trig to confirm that the action was received
+
+Any devices/applications that need to monitor x10 commands (not controllers) should always (preferably) listen for xpl-trig messages
+
+When the command is extended, the data1 and data2 sections of the XPL message must be present, and must contain the two bytes
+of data to be sent as part of the extended code. The values of data1 and data2 should be in decimal form, between 0 and 255.
+
+== [[Standard Schema Notes]] ==

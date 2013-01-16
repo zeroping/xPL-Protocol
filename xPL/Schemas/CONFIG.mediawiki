@@ -1,6 +1,6 @@
 == CONFIG Message Specification ==
 
-This schema provides the description of configuration messages send by xPL devices on the xPL network. This schema is part of the core [[XPL Specification Document|xPL Protocol]]. If a device is not configurable, it should only send [[Schema_-_HBEAT|regular heartbeats]].
+This schema provides the description of configuration messages send by xPL devices on the xPL network. This schema is part of the core [[../xPL_Core_Protocol.mediawiki|XPL Specification Document]]. If a device is not configurable, it should only send [[HBEAT.mediawiki|regular heartbeats]].
 
 == XPL-STAT Structure ==
 

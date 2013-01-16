@@ -1,0 +1,27 @@
+===HOMEEASY.BASIC===
+
+This schema is used for native communications with the Byron HomeEasy range of home automation devices.
+
+ homeeasy.basic
+ {
+ address=name|#hex
+ unit=#(0-15)|group|he105
+ command=on|off|preset
+ [level=#(0-15)]
+ }
+
+'''address=name|#hex'''<br>
+The address used by the HomeEasy device.  In the RF protocol this is a 26bit value, which should be specified as a hexadecimal number with a leading 0x.  For user convenience when sending commands, the address can be replaced by a text string which will be hashed into a 26bit address.  If this string is used when pairing the device to the transmitter, then the user never need worry about what the actual underlying address is.  When using this schema with the HE105 heating controller, the address is always in the hex format, and will be the same value as set on the dip switches on the device (i.e. between 0x01 and 0x20).
+
+'''unit=#(0-15)|group|he105'''<br>
+The unit number of the device.  This is a value between 0 and 15, and can also be a special reserved unit called "group".  The "group" unit code is especially useful with computer control, since two consecutive group on commands will not cause the device to go into its dimming cycle.  The unit "he105" is used when communicating with the HE105 Heating Controller.
+
+'''command=on'''<br>
+Turns the device on.  A HomeEasy device is paired with the transmitter by putting the device into setup mode and sending an on command.
+
+'''command=off'''<br>
+Turns the device off.  If the device is in setup mode, sending an off command will unpair it from the transmitter.
+
+'''command=preset'''<br>
+'''level=#(0-15)'''<br>
+Sets the device to specific dim level.  15 is the brightest level. Note that a lamp at preset 0 is not quite off.  Not valid for use with on-off devices or the HE105 heating controller.

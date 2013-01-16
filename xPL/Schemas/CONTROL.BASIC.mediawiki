@@ -1,0 +1,64 @@
+== CONTROL.BASIC Message Specification ==
+
+*Class = CONTROL
+*Type  = BASIC
+
+The control.basic schema is used to exert control over any output device on an xPL network, such as a light, a dimmer, a slider, or a relay.
+
+== XPL-TRIG Structure ==
+
+There is no Trigger Message Structure for CONTROL.BASIC. 
+If an output device (such as a dimmer) wishes to report it's status to the network, it should use the sensor.basic message schema.
+
+
+== XPL-CMND Structure ==
+
+ control.basic
+ {
+ device=<sensor name>
+ type=<sensor type>
+ current=<value to which device should be set>
+ [data1=<additional data>]
+ [name=]
+ }
+
+In terms of setting items: Where current= can explain it all
+that should be used e.g. current=high or low or inc or dec but where it
+needs more info like increment counter by 4 you would use 
+
+ current=inc
+ data1=4 
+
+== XPL-STAT Structure ==
+
+Not Applicable
+
+ hbeat.*
+ {
+ (hbeat items)
+ }
+
+== Schema Specific Notes ==
+
+The following device types are currently supported:
+
+*balance - -100 to +100
+*flag - set, clear, neutral
+*infrared - send, enable_rx, disable_rx, enable_tx, disable_tx, sendx (send x times)
+*input - enable, disable
+*macro - enable, disable, do
+*mute - yes, no
+*output - enable, disable, high, low, toggle, pulse
+*variable - inc, dec, 0-255 (for set)
+*periodic - started, enable, disable
+*scheduled - started, enable, disable
+*slider - 
+nn = set to value (0-255)<br>
++nn = increment by nn<br>
+-nn = decrement by nn<br>
+nn% = set to nn (where nn is a percentage - 0-100%)<br>
+*timer - went off, start, stop, halt, resume
+
+The above list may be expanded over time to facilitate additional device types.
+
+== [[Standard Schema Notes]] ==

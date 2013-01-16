@@ -1,0 +1,82 @@
+== OSD.BASIC Message Specification ==
+
+*Class = OSD
+*Type  = BASIC
+
+This Schema provides a method of displaying text messages to an xPL
+implementation.
+
+== XPL-CMND Structure ==
+
+ osd.basic
+ {
+ command=clear|write|exclusive|release
+ [text=<text to display. each line should be seperated by the \n seperator>]
+ [row=<display row>]
+ [column=<display from column>]
+ [delay=<seconds to display>]
+ }
+
+exclusive/release allow another device to take exclusive control of
+the osd device.  The osd device should ignore all messages from any
+other source while locked.  exclusive/release should be sent on their
+own only, and be targetted at the osd device.  Both should perform a
+clear.
+
+
+== XPL-TRIG Structure ==
+
+ osd.confirm
+ {
+ command=clear|write|exclusive|release
+ [text=<text to display. each line should be seperated by the \n seperator>]
+ [row=<display row>]
+ [column=<display from column>]
+ [delay=<seconds to display>]
+ }
+
+A Trigger Message with class osd.confirm MAY be sent by the
+application or device to confirm the actual actions taken in
+displaying a given message.  This confirmation message should contain
+the original details, with the provisions that:
+
+If the Display Device does not support overwriting, and executes a
+clear each time, the Trigger message should contain command=clear
+rather than command=write
+
+If the Display Device does not support indefinite display, but clears
+after (for example, 15 seconds) the Trigger message should contain
+delay=15 rather than delay=0
+
+== XPL-STAT Structure ==
+
+ hbeat.*
+ {
+ (hbeat items)
+ } 
+
+
+== Schema Specific Notes ==
+
+command is the only compulsory item.
+
+When command=clear is used, the display device should execute a "clear
+screen" operation before displaying the message.  It is valid to send a
+command=clear without any further text to display.
+
+When command=write is used, the display device will simply process the
+text information, possibly overlapping any existing display.  Devices
+are not required to support this mode of operation.  When command=write
+is used, text is mandatory.
+
+A Value of delay=0 should be interpreted by the application as either
+"maximum possible delay", or as appropriate, "do not clear".  Delays
+are cumulative, that is, text that is placed on screen with a delay of
+5 seconds will remain on screen if a subsequent message specifies a
+further delay.
+
+row, column and delay should have default values appropriate to the
+class of display device within the device or application.
+
+
+== [[Standard Schema Notes]] ==

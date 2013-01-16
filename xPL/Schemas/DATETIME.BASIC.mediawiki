@@ -1,0 +1,53 @@
+== DATETIME.BASIC Message Specification ==
+
+*Class = DATETIME
+*Type  = BASIC
+
+This Schema provides date & time information to an xpl implementation
+
+== XPL-TRIG Structure ==
+
+ datetime.basic
+ {
+ datetime=<date and time as yyyymmddhhmmss>
+ date=<date as yyyymmdd>
+ time=<time as hhmmss>
+ [format1=<user defined date/time format>]
+ [format2=<user defined date/time format>]
+ [format3=<user defined date/time format>]
+ [format4=<user defined date/time format>]
+ }
+
+== XPL-CMND Structure ==
+ 
+ datetime.request
+ {
+ command=status
+ }
+
+
+== XPL-STAT Structure ==
+
+ hbeat.*
+ {
+ (hbeat items)
+ schema=datetime.basic
+ status=<date and time as yyyymmddhhmmss>
+ }
+
+or
+
+ datetime.basic
+ {
+ status=<date and time as yyyymmddhhmmss>
+ }
+
+This message sent in response to a status request of datetime.request
+
+
+== Schema Specific Notes ==
+
+It is acceptable for a device/application based on this Schema 
+to disable the xpl-trig message
+
+== [[Standard Schema Notes]] ==

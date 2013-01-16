@@ -20,10 +20,10 @@ Vendor IDs can only consist of lower case letters - no symbols, hyphens etc.
 
 A Vendor ID is considered Active if the vendor has:
 * released any xPL enabled applications or hardware 
-* provided an [[Sample_vendor_XML_File.mediawiki|XML Plugin file]] to describe their applications/hardware
+* provided an [[Sample_vendor_XML_file.mediawiki|XML Plugin file]] to describe their applications/hardware
 
 == Inactive Vendor IDs ==
 
 A Vendor ID is considered inactive if the vendor has either:
 * not released any xPL enabled applications or hardware
-* not provided an [[Sample_vendor_XML_File.mediawiki|XML Plugin file]] to describe their applications/hardware
+* not provided an [[Sample_vendor_XML_file.mediawiki|XML Plugin file]] to describe their applications/hardware
