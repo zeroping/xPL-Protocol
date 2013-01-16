@@ -1,0 +1,175 @@
+== FRAGMENT Message Specification ==
+
+This schema provides the possibility to divide messages that are too large for a regular xPL message to be send in multiple messages (fragments).
+
+== Definitions ==
+* ''original message''; the message that has to be sent, which is too large for a single xPL message
+* ''fragmented message''; a set of xPL messages that where created when an ''original message'' was split for transmission over the xPL network
+* ''reassembled message''; on the receiving end this is the message (which is identical to the ''original message'') that has been created from the individual fragments in the ''fragmented message''
+
+== Background ==
+xPL message size has been limited to 1500 bytes, this includes some overhead, so actual message size for xPL data is 1472 bytes. For some applications this limit was hindering because it required data to be split into multiple messages. To resolve this issue in a common manner this schema has been set up.
+
+Technically speaking; the 1500 messages size is based on the recommended MTU size for ethernet connections. This is the size of individual packets being send over an ethernet network, any larger data will be fragmented on that network level (ethernet). Because the potential fragmentation on the ethernet level has drawbacks for reliability this had to be addressed as well within this schema. Within the mentioned 1500 bytes there is an overhead of 20 bytes for IP information and an additional 8 bytes for UDP information. This leaves the final 1472 bytes of data for an xPL message.
+
+== Schema description ==
+
+=== fragment.basic ===
+There is no disctinction in 'fragment.basic' for the different message types (trig/stat/cmnd).
+
+ fragment.basic
+ {
+ partid=[part]/[#parts]:[messageid]
+ [schema=[xxx.yyy]]
+ }
+
+* '''[part]''' is the part number of this message, starting at 1.
+* '''[#parts]''' is the overall number of parts of the message
+* '''[messageid]''' sender specific message id (unique within context of senders xPL address). This value should be a numeric counter, which resets at a high value (high is considered a value that would normally not be reached in an hour of normal operations, creating a uniqueness timespan of 1 hour).
+* '''[schema=[xxx.yyy]]''' only allowed for part nr 1, the value is the schema for the ''original/reassembled messages''.
+
+=== fragment.request ===
+For requesting a missed fragment; a command message with schema 'fragment.request' is available:
+ fragment.request
+ {
+ command=resend
+ message=[messageid]
+ part=x
+ [part=y]
+ }
+A different schema ('fragment.request') is used because the 'fragment.basic' can have any type and hence cannot be reused for this purpose. Multiple partnumbers can be requested, each as its own key-value pair in the message body.
+
+=== retention ===
+'''the sender''' should be able to resend until 10 seconds after the last part was send (the 10 second period restarts if a fragment is resend). So if the receiver doesn't get the next part of a still incomplete message within 3 seconds after reception of the last part, it should request a resend of missing parts. If the receiver hasn't received ANY next part (after the resend request) within 10 seconds the message should be discarded. If it does receive a next part, but is still incomplete, then the 3 second delay for requesting missing parts should restart.
+
+'''the receiver''' should also retain (at least) the message id of completed messages. If another fragment (possibly requested by another device) arrives for this message, it should be discarded. The id should be retained for at least 1 minute after the last fragment was received. If another fragment is received during this period the 1 minute period starts over.
+This receiver part is important as it might create and endless message loop on the xPL network if not (correctly) implemented.
+
+== Example usage ==
+=== Fragmenting ===
+The description will be done based upon an example; assume you want to sent a message, 30 key value pairs, each quite large. The overall size of the key value pairs is 3000 bytes.
+
+This is the message;
+ xpl-trig
+ {
+ hop=1
+ source=tieske-mydev.someinstance
+ target=*
+ }
+ log.basic
+ {
+ key1=value1
+ ....
+ key30=value30
+ }
+Obviously the ''original message'' it too large to send as a single message, hence the 'fragment.basic' will be applied. The changes made;
+* schema moves into the message body and becomes 'fragment.basic',
+* second item added is the partid key with its value
+* only the first number of keys is added as far as they do not make the overall message size exceed 1472 bytes
+* everything else; type, hop, source, target remains
+
+This results in a ''fragmented message'' consisting of three messages (fragments); 
+Message/fragment 1:
+ xpl-trig
+ {
+ hop=1
+ source=tieske-mydev.someinstance
+ target=*
+ }
+ fragment.basic
+ {
+ partid=1/3:12
+ schema=log.basic
+ key1=value1
+ ....
+ key9=value9
+ }
+
+Message/fragment 2:
+ xpl-trig
+ {
+ hop=1
+ source=tieske-mydev.someinstance
+ target=*
+ }
+ fragment.basic
+ {
+ partid=2/3:12
+ key10=value10
+ ....
+ key20=value20
+ }
+
+Message/fragement 3:
+ xpl-trig
+ {
+ hop=1
+ source=tieske-mydev.someinstance
+ target=*
+ }
+ fragment.basic
+ {
+ partid=3/3:12
+ key21=value21
+ ....
+ key30=value30
+ }
+
+Things to note;
+* The '12' in the partid is a unique ID generated by the sender, in this case it means that this is the 12th fragmented message send by this device. 
+* the 'schema' key is only present in the first message (again; saving bytes)
+* any additional occurances of keys named 'partid' or 'schema' are considered to be part of the data from the ''original message''. Only the first occurance in a message is to be used for fragmenting/reassembling.
+
+=== Reassembling ===
+
+The ''fragmented message'' (three messages/fragments) gets send over the network and on the receiving end the device receives them, and reassembles the individual fragments as the ''reassembled message'' (identical to the ''original message''). Simply reversing the fragmentation process.
+
+=== Overcome unreliability ===
+
+Unreliability has a number of faces due to the technical implementation of xPL over UDP. UDP has a broadcast principle, but as such lacks error controls and reassembly. In short; you cannot trust the UDP protocol to deliver all packets, nor may you assume that packets send will be received in the same order.
+
+Lets assume that in the above example 2 messages get lost, fragments 1 and 3. So the three messages get send on the xPL network and on the receiving end an application receives message 2. The following should happen;
+* The xPL library/module in the receiver application waits for 3 seconds for the other messages/fragments. When it doesn't receive them it sends the following message
+ fragment.request
+ {
+ command=resend
+ message=12
+ part=1
+ part=3
+ }
+* The sender responds to this request by resending the exact same 2 messages (part 1 and 3, as requested)
+* The xPL library/module of the receiving application now has all 3 parts, and now constructs the ''reassembled message'' from the 3 parts, and delivers it to its host application.
+
+== Standard Schema Notes ==
+
+Where possible use of this schema should be discouraged, as smaller embedded devices might not be able to reassemble the ''fragmented message'', so use only if there are no alternatives or where there is no use for such devices to ever need to deal with such a message (for example; browsing a media library).
+
+Not all size limitations can be overcome this way. The overall message size remains. Assume maximum length identifiers (and 1 key, maximum length) then just the message overhead would be;
+ xpl-cmnd
+ {
+ hop=1
+ source=12345678-12345678.1234567890123456
+ target=12345678-12345678.1234567890123456
+ }
+ 12345678.12345678
+ {
+ partid=000/999:99
+ 1234567890123456=
+ }
+Which is 161 bytes, of 1472 available, leaves 1312 as the save maximum bytecount for a single value. And this doesn't include UTF8, so using UTF8, its important to count bytes, not characters. Any value with a larger bytecount has a risk of not being able to be send, so developers should be aware of that.
+
+Though it doesn't make sense to use it this way, devices implementing this schema should be capable of handling fragmented messages consisting of just 1 fragment. So this message;
+ schema=fragment.basic
+ {
+ partid=1/1:32
+ schema=log.basic
+ level=wrn
+ text=This is a 1 fragment fragmented message.
+ }
+
+should be equal to
+ schema=log.basic
+ {
+ level=wrn
+ text=This is a 1 fragment fragmented message.
+ }
