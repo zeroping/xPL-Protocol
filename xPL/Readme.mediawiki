@@ -1,16 +1,16 @@
-== [[The Core Protocol]] ==
+== The Core Protocol ==
 
 The key document produced by the xPL Project is the [[xPL/xPL_Core_Protocol.mediawiki|xPL Protocol]], a detailed description of the xPL message structure, the maximum length of message elements etc.
 
 This should be the first port of call for developers looking to port xPL to a new platform.
 
-== [[Message Schemas]] ==
+== Message Schemas ==
 
-xPL uses well defined message schemas to ensure that applications from different [[xPL Vendors|vendors]] can interact sensibly. Message Schemas are extensible, and define not only the elements which should be present in a message, but also the order in which they appear. 
+xPL uses well defined message schemas to ensure that applications from different [[xpl/xPL_Vendors.mediawiki|vendors]] can interact sensibly. Message Schemas are extensible, and define not only the elements which should be present in a message, but also the order in which they appear. 
 
 This allows simple devices and applications to parse messages more easily.
 
-[[Schemas|All of the existing message schemas can be found here]]. Developers looking to create a new schema are invited to post their discussion on the [http://www.xpl-home.org/forums xPL forums] in the developers area.
+[[xpl/Schemas|All of the existing message schemas can be found here]]. Developers looking to create a new schema are invited to post their discussion on the [http://www.xpl-home.org/forums xPL forums] in the developers area.
 
 == XHCP - Enabling Smart Clients ==
 
@@ -20,11 +20,11 @@ These two components do not have to be installed on the same PC - they communica
 
 == XML Vendor Files ==
 
-Each [[xPL_Vendors.mediawiki|xPL Vendor]] maintains an XML "fragment" - this is a description of the applications and devices supplied by that vendor, which allows front end applications to present the abilities of a particular xPL device in plain language that is accesible to end users.  It can allow an application which previously knew nothing about a new xPL device or service to offer seamless control of the device to an end user.  It also makes scripting and automating the device via tools like [[ xPLHAL ]] and [http://www.xPL4Java.org/xPL4Java DCM] much easier and foolproof.
+Each [[xpl/xPL_Vendors.mediawiki|xPL Vendor]] maintains an XML "fragment" - this is a description of the applications and devices supplied by that vendor, which allows front end applications to present the abilities of a particular xPL device in plain language that is accesible to end users.  It can allow an application which previously knew nothing about a new xPL device or service to offer seamless control of the device to an end user.  It also makes scripting and automating the device via tools like [[ xPLHAL ]] and [http://www.xPL4Java.org/xPL4Java DCM] much easier and foolproof.
 
 The xPL project maintains a masterlist of all plugins including their download locations. This list is used to allow software to automatically discover and download new plugins for a vendor. Applications can download the masterlist and from there get access to all individual vendor plugins. The master list is located at http://xplproject.org.uk/plugins.xml (It also includes alternative download locations).
 
-The easiest way to make a vendor XML file is to use the [[Sample_vendor_XML_File.mediawiki|sample vendor XML file]].  There is a GUI tool for creating and editing the XML files called [http://www.xpl4java.org/xPL4Java/ XPE] (xPL Plugin Editor).  It's written in Java, so it's available for most platforms.  It helps to insure that your plugin file is valid and contains only known/valid options.
+The easiest way to make a vendor XML file is to use the [[xpl/Sample_vendor_XML_File.mediawiki|sample vendor XML file]].  There is a GUI tool for creating and editing the XML files called [http://www.xpl4java.org/xPL4Java/ XPE] (xPL Plugin Editor).  It's written in Java, so it's available for most platforms.  It helps to insure that your plugin file is valid and contains only known/valid options.
 
 Once your vendor plugin file is ready, you must host it on a web site at a permanent web address (URL) and then ask to have the plugin entry added to the master list of plugins.  You can do so through the [http://xplproject.org.uk/newvendor/index.php Request a Vendor ID] page. Support for the whole process is available through the forums.
 
